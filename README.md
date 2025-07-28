@@ -100,7 +100,7 @@ Nền tảng cung cấp một giao diện thân thiện với người dùng, h�
 ### Các bước cài đặt
 1. **Clone dự án**:
    ```bash
-   git clone [https://github.com/QuocHuyLearningCode/bus-ticket-system.git](https://github.com/wuy-github/java-project.git)
+   git clone [https://github.com/wuy-github/java-project.git]
    cd bus-ticket-system
    ```
 
