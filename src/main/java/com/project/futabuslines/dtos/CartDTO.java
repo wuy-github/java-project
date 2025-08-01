@@ -9,9 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CartDTO {
-    @JsonProperty("user_id")
-    private Long userId;
-
     @JsonProperty("watch_id")
     private Long watchId;
 

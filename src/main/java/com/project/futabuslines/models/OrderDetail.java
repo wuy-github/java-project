@@ -24,11 +24,11 @@ public class OrderDetail {
     private Watch watch;
 
     @Column(name = "price", nullable = false)
-    private Float price;
+    private Integer price;
 
-    @Column(name = "number_of_products", nullable = false)
-    private int numberOfProducts;
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity;
 
     @Column(name = "total_money", nullable = false)
-    private Float totalMoney;
+    private Integer totalMoney;
 }

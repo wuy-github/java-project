@@ -6,35 +6,35 @@ import com.project.futabuslines.dtos.WatchDTO;
 import com.project.futabuslines.dtos.WatchImageDTO;
 import com.project.futabuslines.enums.WatchStatus;
 import com.project.futabuslines.models.*;
+import com.project.futabuslines.responses.WatchListUserViewResponse;
 import com.project.futabuslines.responses.WatchUserViewResponse;
-import com.project.futabuslines.service.IWatchService;
+import com.project.futabuslines.services.IWatchService;
+import com.project.futabuslines.components.FileStorageUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("api/v1/watches")
+@RequestMapping("api/v1/watch")
 @RequiredArgsConstructor
 public class WatchController {
     private final IWatchService watchService;
     private final JwtTokenUtil jwtTokenUtil;
+    private final FileStorageUtil fileStorageUtil;
 
-    @PostMapping("create-watches")
+    @PostMapping("create")
     // Dang tai dong ho moi
     public ResponseEntity<?> createWatch(
             @Valid @RequestBody WatchDTO watchDTO,
@@ -54,14 +54,14 @@ public class WatchController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    @GetMapping("get-all-watch")
+    @GetMapping("get-all")
     // Lay toan bo danh sach
     public ResponseEntity<List<Watch>> getAllWatch(){
         List<Watch> watch =watchService.getAllWatch();
         return ResponseEntity.ok(watch);
     }
 
-    @GetMapping("get-watches/{id}")
+    @GetMapping("get/{id}")
     // Lay 1 dong ho theo id
     public ResponseEntity<?> getWatchById(@PathVariable long id){
         try {
@@ -72,7 +72,7 @@ public class WatchController {
         }
     }
 
-    @PutMapping("update-watches/{id}")
+    @PutMapping("update/{id}")
     // Cap nhat thong tin
     public ResponseEntity<?> updateWatch(
             @PathVariable long id,
@@ -95,7 +95,7 @@ public class WatchController {
 
     }
 
-    @DeleteMapping("delete-watches/{id}")
+    @DeleteMapping("delete/{id}")
     // Xoa
     public ResponseEntity<String> deteteWatch(
             @PathVariable long id
@@ -118,26 +118,7 @@ public class WatchController {
         return ResponseEntity.ok(statuses);
     }
 
-    @GetMapping("/user/{userId}")
-    // Response lai de co the hien thi hinh anh
-    public List<WatchUserViewResponse> getAllWatchesForUser(@PathVariable Long userId) {
-        return watchService.getAllWatchesForUser(userId);
-    }
-
-    @GetMapping("/watches")
-    public ResponseEntity<?> getAllWatches(@RequestHeader(value = "Authorization", required = false) String token) {
-        Long userId = null;
-
-        if (token != null && token.startsWith("Bearer ")) {
-            String jwt = token.substring(7);
-            userId = jwtTokenUtil.extractUserId(jwt);
-        }
-
-        List<WatchUserViewResponse> response = watchService.getAllWatches(userId);
-        return ResponseEntity.ok(response);
-    }
-
-
+    // Upload anh cho Watch
     @PostMapping(value = "uploads/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadWatchImage(
             @PathVariable("id") Long watchId,
@@ -165,7 +146,7 @@ public class WatchController {
                             .body("File must be an image");
                 }
                 // Luu file va cap nhat thumbnail trong DTO
-                String filename = storeFile(file);
+                String filename = fileStorageUtil.storeFile(file);
                 WatchImage watchImage = watchService.uploadWatchImage(
                         existingWatch.getId(),
                         WatchImageDTO.builder()
@@ -184,29 +165,52 @@ public class WatchController {
 
     }
 
-    private String storeFile(MultipartFile file) throws IOException {
-        if (!isImageFile(file) || file.getOriginalFilename() == null) {
-            throw new IOException("Invalid image format");
+    // Lay toan bo watch (chua phan trang) - da response
+//    @GetMapping("/watches")
+//    public ResponseEntity<?> getAllWatches(@RequestHeader(value = "Authorization", required = false) String token) {
+//        Long userId = null;
+//
+//        if (token != null && token.startsWith("Bearer ")) {
+//            String jwt = token.substring(7);
+//            userId = jwtTokenUtil.extractUserId(jwt);
+//        }
+//
+//        List<WatchUserViewResponse> response = watchService.getAllWatches(userId);
+//        return ResponseEntity.ok(response);
+//    }
+
+    @GetMapping("")
+    public ResponseEntity<?> getWatch(
+            @RequestParam("page") int page,
+            @RequestParam("limit") int limit,
+            @RequestParam(value = "sortBy", defaultValue = "id") String sortBy,
+            @RequestParam(value = "order", defaultValue = "desc") String order,
+            @RequestParam(value = "brandName", required = false) String brandName,
+            @RequestParam(value = "categoryName", required = false) String categoryName,
+            @RequestHeader(value = "Authorization", required = false) String token
+    ) {
+        try {
+            Long userId = null;
+            if (token != null && token.startsWith("Bearer ")) {
+                String jwt = token.substring(7);
+                userId = jwtTokenUtil.extractUserId(jwt);
+            }
+            Sort sort = order.equalsIgnoreCase("asc") ?
+                    Sort.by(sortBy).ascending() :
+                    Sort.by(sortBy).descending();
+            PageRequest pageRequest = PageRequest.of(page, limit, sort);
+            Page<WatchUserViewResponse> watchPage = watchService.getWatchesByBrandAndCategory(
+                    brandName, categoryName, pageRequest, userId
+            );
+
+            return ResponseEntity.ok(WatchListUserViewResponse.builder()
+                    .watch(watchPage.getContent())
+                    .totalPage(watchPage.getTotalPages())
+                    .build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-        // Lay ten file goc va lam sach => An toan hop le
-        String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        // Them UUID vao truoc ten file de dam bao ten file la duy nhat
-        String uniqueFilename = UUID.randomUUID().toString() + "_" + filename;
-        // Duong dan den thu muc muon luu file
-        java.nio.file.Path uploadDir = Paths.get("uploads");
-        // Kiem tra va tao thuc muc neu no khong ton tai
-        if (!Files.exists(uploadDir)) {
-            Files.createDirectories(uploadDir);
-        }
-        // Duong dan den file day du
-        Path destination = Paths.get(uploadDir.toString(), uniqueFilename);
-        // Sao chep file vao thu muc dich
-        Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
-        return uniqueFilename;
     }
 
-    private boolean isImageFile(MultipartFile file) {
-        String contentType = file.getContentType();
-        return contentType != null && contentType.startsWith("image/");
-    }
+
 }

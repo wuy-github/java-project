@@ -1,8 +1,9 @@
 package com.project.futabuslines.controllers;
 
+import com.project.futabuslines.components.ValidationUtil;
 import com.project.futabuslines.dtos.BrandDTO;
 import com.project.futabuslines.models.Brand;
-import com.project.futabuslines.service.IBrandService;
+import com.project.futabuslines.services.IBrandService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,22 +14,21 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/brands")
+@RequestMapping("api/v1/brand")
 @RequiredArgsConstructor
 public class BrandController {
     private final IBrandService brandService;
+    private final ValidationUtil validationUtil;
 
-    @PostMapping("create-brand")
+    @PostMapping("create")
+    // Tao nhan hang moi
+    // Phan quyen Admin
     public ResponseEntity<?> createBrand(
             @Valid @RequestBody BrandDTO brandDTO,
             BindingResult result
             ){
-        if (result.hasErrors()){
-            List<String> errorMessage = result.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .toList();
-            return ResponseEntity.badRequest().body(errorMessage);
+        if (validationUtil.hasErrors(result)) {
+            return ResponseEntity.badRequest().body(validationUtil.getErrorMessages(result));
         }
         try {
             Brand brand = brandService.createBrand(brandDTO);
@@ -38,13 +38,17 @@ public class BrandController {
         }
     }
 
-    @GetMapping("get-all-brands")
+    @GetMapping("get-all")
+    // Lay toan bo danh sach Brand
+    // Khong phan quyen => Can response de phuc vu filter tim kiem
     public ResponseEntity<List<Brand>> getAllBrands(){
         List<Brand> brands =brandService.getAllBrand();
         return ResponseEntity.ok(brands);
     }
 
-    @GetMapping("get-brand/{id}")
+    @GetMapping("get/{id}")
+    // Lay mot brand theo id cua no
+    // Khong can thiet
     public ResponseEntity<?> getBrandById(@PathVariable long id){
         try {
             Brand brand = brandService.getBrandById(id);
@@ -54,18 +58,16 @@ public class BrandController {
         }
     }
 
-    @PutMapping("update-brand/{id}")
+    @PutMapping("update/{id}")
+    // Cap nhat brand
+    // Phan quyen admin
     public ResponseEntity<?> updateBrand(
             @PathVariable long id,
             @Valid @RequestBody BrandDTO brandDTO,
                 BindingResult result
     ){
-        if (result.hasErrors()){
-            List<String> errorMessage = result.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .toList();
-            return ResponseEntity.badRequest().body(errorMessage);
+        if (validationUtil.hasErrors(result)) {
+            return ResponseEntity.badRequest().body(validationUtil.getErrorMessages(result));
         }
         try {
             Brand brand = brandService.updateBrand(id, brandDTO);
@@ -75,7 +77,9 @@ public class BrandController {
         }
     }
 
-    @DeleteMapping("delete-brand/{id}")
+    @DeleteMapping("delete/{id}")
+    // Xoa brand
+    // Phan quyen admin
     public ResponseEntity<String> deteteBrand(
             @PathVariable long id
     ){

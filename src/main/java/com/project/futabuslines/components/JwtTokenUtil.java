@@ -31,11 +31,12 @@ public class JwtTokenUtil {
     @Value("${jwt.secretKey}")
     private String secretKey;
 
+    // Tao token tu User
     public String generateToken(User user) throws Exception{
         // properties => claims
         Map<String, Object> claims = new HashMap<>();
 //        this.generateSecretKey();
-        // Tao token dua tren phoneNumber
+        // Tao token dua tren phoneNumber va userId
         claims.put("phoneNumber", user.getPhoneNumber());
         claims.put("userId", user.getId());
         try {
@@ -84,6 +85,7 @@ public class JwtTokenUtil {
         return expirationDate.before(new Date());
     }
 
+    // Truy xuat so dien thoai tu token
     public String extractPhoneNumber(String token){
         return extractClaim(token, Claims::getSubject);
     }
@@ -95,6 +97,7 @@ public class JwtTokenUtil {
         && !isTokenExpired(token));
     }
 
+    // Truy xuat user id tu token
     public Long extractUserId(String token) {
         Claims claims = extractAllClaims(token);
         Object userIdObj = claims.get("userId");

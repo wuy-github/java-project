@@ -2,7 +2,7 @@ package com.project.futabuslines.controllers;
 
 import com.project.futabuslines.dtos.FavoriteDTO;
 import com.project.futabuslines.models.Favorite;
-import com.project.futabuslines.service.IFavoriteService;
+import com.project.futabuslines.services.IFavoriteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/favorites")
+@RequestMapping("api/v1/favorite")
 @RequiredArgsConstructor
 public class FavoriteController {
     private final IFavoriteService favoriteService;
 
-    @PostMapping("create-favorite")
+    @PostMapping("create")
     // Them yeu thich
     public ResponseEntity<?> addFavorite(
             @Valid @RequestBody FavoriteDTO favoriteDTO,
@@ -39,7 +39,7 @@ public class FavoriteController {
         }
     }
 
-    @GetMapping("get-favorite-for-user/{userId}")
+    @GetMapping("get-favorite/{userId}")
     // Lay danh sach yeu thich cua user
     public ResponseEntity<?> getWatchByUserId(@PathVariable long userId){
         try {
@@ -50,7 +50,7 @@ public class FavoriteController {
         }
     }
 
-    @DeleteMapping("delete-favorite/{id}")
+    @DeleteMapping("delete/{id}")
     // Xoa
     public ResponseEntity<?> deteteCategory(
             @PathVariable long id

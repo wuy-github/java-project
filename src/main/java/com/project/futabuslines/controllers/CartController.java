@@ -1,8 +1,11 @@
 package com.project.futabuslines.controllers;
 
+import com.project.futabuslines.components.AuthUtil;
+import com.project.futabuslines.components.ValidationUtil;
 import com.project.futabuslines.dtos.CartDTO;
 import com.project.futabuslines.models.Cart;
-import com.project.futabuslines.service.ICartService;
+import com.project.futabuslines.responses.CartResponse;
+import com.project.futabuslines.services.ICartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,36 +16,40 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/cart")
+@RequestMapping("/api/v1/cart")
 @RequiredArgsConstructor
 public class CartController {
+    private final ValidationUtil validationUtil;
+    private final AuthUtil authUtil;
     private final ICartService cartService;
 
     @PostMapping("add-cart")
+    // Them vao gio hang
+    // Phan quyen buyer
+    // Chua dang nhap thi khong duoc them
     public ResponseEntity<?> addCart(
             @Valid @RequestBody CartDTO cartDTO,
+            @RequestHeader(value = "Authorization", required = false) String token,
             BindingResult result
     ){
-        if (result.hasErrors()){
-            List<String> errorMessage = result.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .toList();
-            return ResponseEntity.badRequest().body(errorMessage);
+        if (validationUtil.hasErrors(result)) {
+            return ResponseEntity.badRequest().body(validationUtil.getErrorMessages(result));
         }
         try {
-            Cart cart = cartService.addCart(cartDTO);
+            Long userId = authUtil.extractUserIdFromToken(token);
+            Cart cart = cartService.addCart(cartDTO, userId);
             return ResponseEntity.ok(cart);
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @GetMapping("get-cart/{userId}")
+    @GetMapping("get-cart")
     public ResponseEntity<?> getCartByUserId(
-        @PathVariable("userId") long userId
+            @RequestHeader(value = "Authorization", required = false) String token
     ){
         try{
+            Long userId = authUtil.extractUserIdFromToken(token);
             List<Cart> carts = cartService.getCartByUserId(userId);
             return ResponseEntity.ok(carts);
         }catch (Exception e){
@@ -50,7 +57,7 @@ public class CartController {
         }
     }
 
-    @DeleteMapping("delete-cart/{id}")
+    @DeleteMapping("delete/{id}")
     public ResponseEntity<?> deteleCart(
             @PathVariable long id
     ){

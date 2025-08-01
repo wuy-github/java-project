@@ -96,17 +96,18 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 Pair.of(String.format("%s/otp/send",apiPrefix), "POST"),
                 Pair.of(String.format("%s/otp/reset-password",apiPrefix), "POST"),
                 Pair.of(String.format("%s/otp/verify",apiPrefix), "POST"),
-                Pair.of(String.format("%s/ticket/vnpay-return", apiPrefix), "GET"),
-                Pair.of(String.format("%s/ticket/vnpay/notify", apiPrefix), "POST"),
+                Pair.of(String.format("%s/orders/vnpay-return", apiPrefix), "GET"),
+                Pair.of(String.format("%s/orders/vnpay/notify", apiPrefix), "POST"),
                 Pair.of(String.format("%s/feedbacks", apiPrefix), "POST"),
-                Pair.of(String.format("%s/ticket/momo/callback", apiPrefix), "GET"),
+                Pair.of(String.format("%s/orders/momo/callback", apiPrefix), "GET"),
+                Pair.of(String.format("%s/watch/watches", apiPrefix), "GET"),
                 Pair.of("/uploads/", "GET")
 
 
         );
-        System.out.println("apiPrefix = " + apiPrefix);
-        System.out.println("Path = " + request.getServletPath());
-        System.out.println(path + " - " + method);
+//        System.out.println("apiPrefix = " + apiPrefix);
+//        System.out.println("Path = " + request.getServletPath());
+//        System.out.println(path + " - " + method);
 
         for (Pair<String, String> bypass : bypassTokens) {
             if (path.equals(bypass.getFirst()) && method.equals(bypass.getSecond())) {

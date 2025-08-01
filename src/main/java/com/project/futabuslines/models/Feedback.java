@@ -15,7 +15,7 @@ public class Feedback extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Integer rating; // Mã vé hỗ trợ (nếu có)
+    private Integer rating;
 
     @Column(length = 400)
     private String description;

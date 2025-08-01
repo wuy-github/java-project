@@ -1,9 +1,27 @@
-package com.project.futabuslines.repositories;
+    package com.project.futabuslines.repositories;
 
-import com.project.futabuslines.models.Watch;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+    import com.project.futabuslines.models.Watch;
+    import org.springframework.data.domain.Page;
+    import org.springframework.data.domain.Pageable;
+    import org.springframework.data.jpa.repository.JpaRepository;
+    import org.springframework.data.jpa.repository.Query;
+    import org.springframework.data.repository.query.Param;
+    import org.springframework.stereotype.Repository;
 
-@Repository
-public interface WatchRepository extends JpaRepository<Watch, Long> {
-}
+    import java.util.List;
+
+    @Repository
+    public interface WatchRepository extends JpaRepository<Watch, Long> {
+        Page<Watch> findAll(Pageable pageable);
+        List<Watch> findByBrandId(long brandId);
+        List<Watch> findByCategoryId(long categoryId);
+        @Query("SELECT w FROM Watch w " +
+                "JOIN w.brand b " +
+                "JOIN w.category c " +
+                "WHERE (:brandName IS NULL OR LOWER(b.name) LIKE LOWER(CONCAT('%', :brandName, '%'))) " +
+                "AND (:categoryName IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :categoryName, '%')))")
+        Page<Watch> findByBrandAndCategoryName(
+                @Param("brandName") String brandName,
+                @Param("categoryName") String categoryName,
+                Pageable pageable);
+    }

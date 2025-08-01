@@ -6,7 +6,7 @@ import com.project.futabuslines.dtos.WatchDetailDTO;
 import com.project.futabuslines.models.WatchDetail;
 import com.project.futabuslines.responses.WatchDetailViewResponse;
 import com.project.futabuslines.responses.WatchDetailUserViewResponse;
-import com.project.futabuslines.service.IWatchDetailService;
+import com.project.futabuslines.services.IWatchDetailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;

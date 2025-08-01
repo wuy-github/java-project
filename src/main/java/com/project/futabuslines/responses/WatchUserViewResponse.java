@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.project.futabuslines.models.Watch;
 import lombok.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -25,6 +28,9 @@ public class WatchUserViewResponse {
     @JsonProperty("is_favorite")
     private boolean isFavorite;
 
+    @JsonProperty("updated_at")
+    private LocalDateTime updatedAt;
+
     public static WatchUserViewResponse fromWatchView(Watch watch, boolean isFavorite, String imageUrl) {
         return WatchUserViewResponse.builder()
                 .id(watch.getId())
@@ -34,6 +40,7 @@ public class WatchUserViewResponse {
                 .nameBrand(watch.getBrand() != null ? watch.getBrand().getName() : "")
                 .nameCategory(watch.getCategory() != null ? watch.getCategory().getName() : "")
                 .isFavorite(isFavorite)
+                .updatedAt(watch.getUpdateAt())
                 .build();
     }
 }

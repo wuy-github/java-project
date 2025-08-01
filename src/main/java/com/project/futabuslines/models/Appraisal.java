@@ -31,8 +31,8 @@ public class Appraisal extends BaseEntity {
     private Boolean authenticity;
 
     // Tinh trang
-    @Column(name = "condition")
-    private String condition;
+    @Column(name = "watch_condition")
+    private String watchCondition;
 
     // Bao cao tham dinh
     @Column(name = "appraisal_report")

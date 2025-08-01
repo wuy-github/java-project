@@ -2,7 +2,7 @@ package com.project.futabuslines.controllers;
 
 import com.project.futabuslines.dtos.CategoryDTO;
 import com.project.futabuslines.models.Category;
-import com.project.futabuslines.service.ICategoryService;
+import com.project.futabuslines.services.ICategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/categories")
+@RequestMapping("api/v1/category")
 @RequiredArgsConstructor
 public class CategoryController {
     private final ICategoryService categoryService;
 
-    @PostMapping("create-category")
+    @PostMapping("create")
     public ResponseEntity<?> createCategory(
             @Valid @RequestBody CategoryDTO categoryDTO,
             BindingResult result
@@ -39,13 +39,13 @@ public class CategoryController {
 
     }
 
-    @GetMapping("get-all-categories")
+    @GetMapping("get-all")
     public ResponseEntity<List<Category>> getAllCategories(){
         List<Category> categories =categoryService.getAllCategory();
         return ResponseEntity.ok(categories);
     }
 
-    @GetMapping("get-category/{id}")
+    @GetMapping("get/{id}")
     public ResponseEntity<?> getCategoryById(@PathVariable long id){
         try {
             Category category = categoryService.getCategoryById(id);
@@ -55,7 +55,7 @@ public class CategoryController {
         }
     }
 
-    @PutMapping("update-category/{id}")
+    @PutMapping("update/{id}")
     public ResponseEntity<?> updateCategory(
             @PathVariable long id,
             @Valid @RequestBody CategoryDTO categoryDTO,
@@ -77,7 +77,7 @@ public class CategoryController {
 
     }
 
-    @DeleteMapping("delete-category/{id}")
+    @DeleteMapping("delete/{id}")
     public ResponseEntity<String> deteteCategory(
             @PathVariable long id
     ){
