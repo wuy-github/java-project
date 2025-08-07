@@ -15,7 +15,7 @@ public class CartController {
 
     @PostMapping("add-cart")
     public ResponseEntity<?> addCart(
-            @Valid @RequestBody CartDTO cartDTO,
+            @Valid @RequestBody CartDTO cartDTO ,
             BindingResult result
     ){
         if (result.hasErrors()){
