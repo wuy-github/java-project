@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng bán sản phẩm</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f6f8fa;
+        padding: 20px;
+    }
+    .form-container {
+        max-width: 900px;
+        margin: auto;
+        background: #fff;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+    }
+    h2 {
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 8px;
+        margin-bottom: 20px;
+        color: #333;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    td {
+        padding: 8px 10px;
+        vertical-align: middle;
+    }
+    input, select, textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    input:focus, select:focus, textarea:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+    .preview-img {
+        max-height: 150px;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+    .btn {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 18px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 15px;
+        margin-top: 15px;
+    }
+    .btn:hover {
+        background-color: #0056b3;
+    }
+    #previewContainer {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+</style>
+</head>
+<body>
+
+<!-- Menu điều hướng -->
+<header style="margin-bottom:20px;">
+  <a href="index.html">🏠 Trang chủ</a> |
+  <a href="products.html">🛍 Sản phẩm</a> |
+  <a href="profile.html">👤 Profile</a>
+</header>
+
+<div class="form-container">
+    <h2>1. Thông tin cơ bản</h2>
+    <table>
+        <tr>
+            <td>Tên sản phẩm</td>
+            <td><input id="name" type="text" placeholder="Nhập tên sản phẩm"></td>
+        </tr>
+        <tr>
+            <td>Thương hiệu</td>
+            <td><input id="brand"><option> </option></select></td>
+        </tr>
+        <tr>
+            <td>Danh mục</td>
+            <td><select id="category"><option>Đồng hồ</option></select></td>
+        </tr>
+        <tr>
+            <td>Giá</td>
+            <td><input id="price" type="number" placeholder="Nhập giá"></td>
+        </tr>
+        <tr>
+            <td>Số lượng</td>
+            <td><input id="quantity" type="number" placeholder="Nhập số lượng"></td>
+        </tr>
+    </table>
+
+    <h2>2. Thông tin chi tiết</h2>
+    <table>
+        <tr><td>Giới tính</td><td><input id="gender" type="text"></td></tr>
+        <tr><td>Hình dạng</td><td><input id="shape" type="text"></td></tr>
+        <tr><td>Loại máy</td><td><input id="movement_type" type="text"></td></tr>
+        <tr><td>Phong cách</td><td><input id="style" type="text"></td></tr>
+        <tr><td>Loại kính</td><td><input id="glass_type" type="text"></td></tr>
+        <tr><td>Đường kính</td><td><input id="diameter" type="text"></td></tr>
+        <tr><td>Chất liệu vỏ</td><td><input id="case_material" type="text"></td></tr>
+        <tr><td>Chất liệu dây</td><td><input id="band_material" type="text"></td></tr>
+        <tr><td>Chống nước</td><td><input id="water_resistance" type="text"></td></tr>
+        <tr><td>Tính năng</td><td><input id="features" type="text"></td></tr>
+        <tr><td>Màu mặt</td><td><input id="dial_color" type="text"></td></tr>
+        <tr><td>Xuất xứ</td><td><input id="origin" type="text"></td></tr>
+        <tr><td>Mô tả</td><td><textarea id="description"></textarea></td></tr>
+    </table>
+
+    <h2>3. Hình ảnh (tối đa 4 ảnh)</h2>
+    <input type="file" id="imgUpload" multiple accept="image/*">
+    <div id="previewContainer"></div>
+
+    <button class="btn" id="postBtn">Đăng bán</button>
+</div>
+
+<script>
+const storageKey = 'app_products_session';
+const sellerStorageKey = 'app_seller_session';
+
+// Lưu thông tin người bán mẫu nếu chưa có
+if (!sessionStorage.getItem(sellerStorageKey)) {
+    sessionStorage.setItem(sellerStorageKey, JSON.stringify({
+        fullName: "Nguyễn Văn A",
+        email: "a@example.com",
+        phoneNumber: "0901234567",
+        address: "bình Thạnh, TP.HCM",
+        job: "Kinh doanh đồng hồ",
+        role: { name: "seller" },
+        userImages: ["images/121.jpg"]
+    }));
+}
+
+// Chuyển file ảnh thành base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Hiển thị preview ảnh
+document.getElementById('imgUpload').addEventListener('change', function(e) {
+    const previewContainer = document.getElementById('previewContainer');
+    previewContainer.innerHTML = '';
+    const files = [...e.target.files].slice(0, 4);
+    files.forEach(file => {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.classList.add('preview-img');
+        previewContainer.appendChild(img);
+    });
+});
+
+// Khi bấm "Đăng bán"
+document.getElementById('postBtn').addEventListener('click', async function () {
+    const name = document.getElementById('name').value;
+    const price = Number(document.getElementById('price').value);
+    const description = document.getElementById('description').value;
+
+    if (!name || !price) {
+        alert('Vui lòng nhập tên và giá sản phẩm!');
+        return;
+    }
+
+    // Lấy tối đa 4 ảnh và chuyển sang base64
+    const fileList = [...document.getElementById('imgUpload').files].slice(0, 4);
+    const images = await Promise.all(fileList.map(file => fileToBase64(file)));
+
+    let products = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+    const id = products.length ? products[products.length - 1].id + 1 : 1;
+
+    products.push({
+        id,
+        name,
+        price,
+        description,
+        brand: document.getElementById('brand').value,
+        category: document.getElementById('category').value,
+        quantity: Number(document.getElementById('quantity').value),
+        gender: document.getElementById('gender').value,
+        shape: document.getElementById('shape').value,
+        movement_type: document.getElementById('movement_type').value,
+        style: document.getElementById('style').value,
+        glass_type: document.getElementById('glass_type').value,
+        diameter: document.getElementById('diameter').value,
+        case_material: document.getElementById('case_material').value,
+        band_material: document.getElementById('band_material').value,
+        water_resistance: document.getElementById('water_resistance').value,
+        features: document.getElementById('features').value,
+        dial_color: document.getElementById('dial_color').value,
+        origin: document.getElementById('origin').value,
+        images,
+        seller_id: 101,
+        created_at: new Date().toISOString()
+    });
+
+    sessionStorage.setItem(storageKey, JSON.stringify(products));
+    alert('Đăng sản phẩm thành công!');
+    window.location.href = 'profile.html';
+});
+</script>
+</body>
+</html>

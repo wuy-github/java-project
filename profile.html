@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Profile người bán — Appraisers</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      background: #f5f7fa;
+    }
+    .product-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .product-images {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: #fafafa;
+      overflow-x: auto;
+    }
+    .product-images img {
+      height: 120px;
+      border-radius: 8px;
+      object-fit: cover;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .product-images img:hover {
+      transform: scale(1.05);
+    }
+    .card-body {
+      padding: 16px;
+    }
+    .card-body h4 {
+      font-size: 18px;
+      margin: 0 0 6px;
+    }
+    .price {
+      font-size: 17px;
+      color: #e63946;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      color: white;
+    }
+    .btn.small {
+      font-size: 14px;
+    }
+    .btn.edit {
+      background: #1d72b8;
+    }
+    .btn.delete {
+      background: #e63946;
+    }
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 500px;
+      width: 100%;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    /* Lightbox */
+    #lightbox {
+      display: none;
+      position: fixed;
+      z-index: 200;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      align-items: center;
+      justify-content: center;
+    }
+    #lightbox img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="brand">Appraisers</h1>
+      <nav class="nav">
+        <a href="index.html">Trang chủ</a>
+        <a href="products.html">Sản phẩm</a>
+        <a href="create_product.html">Đăng bán</a>
+        <a href="profile.html">Profile</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2>Profile: Người bán demo</h2>
+    <div id="seller-info" class="card mini"></div>
+
+    <h3>Sản phẩm của bạn</h3>
+    <div id="seller-products" class="grid"></div>
+
+    <!-- Edit modal -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <h4>Chỉnh sửa sản phẩm</h4>
+        <form id="editForm">
+          <input type="hidden" name="id" />
+          <label>Tên sản phẩm <input name="name" required /></label>
+          <label>Giá (VND) <input name="price" type="number" required /></label>
+          <label>Kiểu dáng <input name="style" /></label>
+          <label>Xuất xứ <input name="origin" /></label>
+          <label>Mô tả <textarea name="description"></textarea></label>
+          <label>Ảnh (url, phân tách bằng dấu phẩy) <input name="images" /></label>
+          <div class="modal-actions">
+            <button type="button" class="btn" id="cancelEdit">Hủy</button>
+            <button type="submit" class="btn">Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox"><img src=""></div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script>
+    const SELLER_ID = 101;
+    const storageKey = 'app_products_session';
+
+    // 4 ảnh mặc định
+    const defaultImages = [
+  "images/movado.jpeg",
+  "images/omega.jpeg",
+  "images/rolex.jpeg",
+  "images/calvin-klein.jpeg"
+];
+
+
+    function loadSession() {
+      const s = sessionStorage.getItem(storageKey);
+      if (s) {
+        window.__DATA__.products = JSON.parse(s);
+      } else {
+        sessionStorage.setItem(storageKey, JSON.stringify(window.__DATA__.products));
+      }
+    }
+    loadSession();
+    // Thông tin người bán
+const sellerStorageKey = 'app_seller_session';
+let seller = JSON.parse(sessionStorage.getItem(sellerStorageKey)) || 
+             window.__DATA__.users.find(u => u.id === SELLER_ID);
+
+function renderSellerInfo() {
+  const avatar = (seller.userImages && seller.userImages.length) 
+                   ? seller.userImages[0] 
+                   : "images/avatar-default.jpg";
+
+  document.getElementById('seller-info').innerHTML = `
+    <div style="display:flex;align-items:center;gap:15px;">
+      <img src="${avatar}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">
+      <div>
+        <h3>${seller.fullName}</h3>
+        <p>Email: ${seller.email}</p>
+        <p>Phone: ${seller.phoneNumber}</p>
+        <p>Địa chỉ: ${seller.address}</p>
+        <p>Nghề nghiệp: ${seller.job}</p>
+        <p>Role: ${seller.role.name}</p>
+        <button class="btn small edit" id="editSellerBtn">Sửa thông tin</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('editSellerBtn').addEventListener('click', openEditSellerModal);
+}
+renderSellerInfo();
+
+// Modal sửa thông tin người bán
+const sellerModal = document.createElement('div');
+sellerModal.className = 'modal';
+sellerModal.innerHTML = `
+  <div class="modal-content">
+    <h4>Chỉnh sửa thông tin người bán</h4>
+    <form id="editSellerForm">
+      <label>Họ và tên <input name="fullName" required></label>
+      <label>Email <input name="email" type="email" required></label>
+      <label>Số điện thoại <input name="phoneNumber" required></label>
+      <label>Địa chỉ <input name="address"></label>
+      <label>Nghề nghiệp <input name="job"></label>
+      <label>Ảnh đại diện (URL) <input name="avatar"></label>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="cancelSellerEdit">Hủy</button>
+        <button type="submit" class="btn">Lưu</button>
+      </div>
+    </form>
+  </div>
+`;
+document.body.appendChild(sellerModal);
+
+function openEditSellerModal() {
+  const form = document.getElementById('editSellerForm');
+  form.fullName.value = seller.fullName || '';
+  form.email.value = seller.email || '';
+  form.phoneNumber.value = seller.phoneNumber || '';
+  form.address.value = seller.address || '';
+  form.job.value = seller.job || '';
+  form.avatar.value = (seller.userImages && seller.userImages.length) ? seller.userImages[0] : '';
+  sellerModal.style.display = 'flex';
+}
+
+document.getElementById('cancelSellerEdit').addEventListener('click', () => sellerModal.style.display = 'none');
+
+document.getElementById('editSellerForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const form = e.target;
+  seller.fullName = form.fullName.value;
+  seller.email = form.email.value;
+  seller.phoneNumber = form.phoneNumber.value;
+  seller.address = form.address.value;
+  seller.job = form.job.value;
+  seller.userImages = form.avatar.value ? [form.avatar.value] : [];
+  sessionStorage.setItem(sellerStorageKey, JSON.stringify(seller));
+  sellerModal.style.display = 'none';
+  renderSellerInfo();
+  alert('Cập nhật thông tin người bán thành công!');
+});
+
+// Đóng modal khi click ra ngoài
+window.addEventListener('click', (e) => {
+  if (e.target === sellerModal) sellerModal.style.display = 'none';
+});
+
+
+    const sellerProductsDiv = document.getElementById('seller-products');
+
+    function renderProducts() {
+      const list = window.__DATA__.products.filter(p => p.seller_id === SELLER_ID);
+      if (!list.length) {
+        sellerProductsDiv.innerHTML = '<p>Không có sản phẩm.</p>';
+        return;
+      }
+      sellerProductsDiv.innerHTML = list.map(p => {
+        let imgs = p.images && p.images.length ? p.images : defaultImages;
+        return `
+        <div class="product-card">
+          <div class="product-images">
+            ${imgs.map(img => `<img src="${img}" alt="${p.name}" onclick="openLightbox('${img}')">`).join('')}
+          </div>
+          <div class="card-body">
+            <h4>${p.name}</h4>
+            <p class="price">${p.price.toLocaleString('vi-VN')}₫</p>
+            <p>${p.description || ''}</p>
+            <div class="actions">
+              <button class="btn small edit" data-id="${p.id}">Sửa</button>
+              <button class="btn small delete" data-id="${p.id}">Xóa</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+      document.querySelectorAll('.delete').forEach(btn => btn.addEventListener('click', (e) => {
+        const id = Number(e.target.dataset.id);
+        if (!confirm('Bạn có chắc muốn xóa sản phẩm này?')) return;
+        window.__DATA__.products = window.__DATA__.products.filter(p => p.id !== id);
+        sessionStorage.setItem(storageKey, JSON.stringify(window.__DATA__.products));
+        renderProducts();
+      }));
+
+      document.querySelectorAll('.edit').forEach(btn => btn.addEventListener('click', (e) => {
+        const id = Number(e.target.dataset.id);
+        openEditModal(id);
+      }));
+    }
+    renderProducts();
+
+    const modal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+
+    function openEditModal(id) {
+      const p = window.__DATA__.products.find(x => x.id === id);
+      editForm.id.value = p.id;
+      editForm.name.value = p.name;
+      editForm.price.value = p.price;
+      editForm.style.value = p.style || '';
+      editForm.origin.value = p.origin || '';
+      editForm.description.value = p.description || '';
+      editForm.images.value = (p.images || []).join(',');
+      modal.style.display = 'flex';
+    }
+
+    document.getElementById('cancelEdit').addEventListener('click', () => modal.style.display = 'none');
+
+    editForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = Number(editForm.id.value);
+      const idx = window.__DATA__.products.findIndex(x => x.id === id);
+      if (idx === -1) return alert('Không tìm thấy sản phẩm');
+
+      window.__DATA__.products[idx].name = editForm.name.value;
+      window.__DATA__.products[idx].price = Number(editForm.price.value);
+      window.__DATA__.products[idx].style = editForm.style.value;
+      window.__DATA__.products[idx].origin = editForm.origin.value;
+      window.__DATA__.products[idx].description = editForm.description.value;
+      window.__DATA__.products[idx].images = editForm.images.value.split(',').map(s => s.trim()).filter(Boolean);
+
+      sessionStorage.setItem(storageKey, JSON.stringify(window.__DATA__.products));
+      modal.style.display = 'none';
+      renderProducts();
+      alert('Cập nhật thành công (lưu trên session).');
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+      if (e.target === lightbox) lightbox.style.display = 'none';
+    });
+
+    // Lightbox
+    const lightbox = document.getElementById('lightbox');
+    function openLightbox(src) {
+      lightbox.querySelector('img').src = src;
+      lightbox.style.display = 'flex';
+    }
+  </script>
+</body>
+</html>
