@@ -15,7 +15,7 @@ import { CalendarMonth, Phone, Chat } from "@mui/icons-material";
 
 import Cart from "./pages/Cart";
 import Favorites from "./pages/Favorites";
-import Profile from "./pages/Profile";
+import ProfilePage from "./pages/ProfilePage";
 
 import Header from "./components/Header";
 import Hero from "./components/Hero";
@@ -25,6 +25,7 @@ import ProductGrid from "./components/ProductGrid";
 import ProductCard from "./components/ProductCard";
 import Footer from "./components/Footer";
 import Store from "./pages/Store";
+import AuthModal from "./components/AuthModal"; // ✅ thêm modal
 
 import { theme } from "./theme/theme";
 import { sampleProducts } from "./data/products";
@@ -36,19 +37,27 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [cartCount, setCartCount] = useState(0);
   const [tabIndex, setTabIndex] = useState(0);
+  const [isAuthOpen, setAuthOpen] = useState(false); // ✅ quản lý modal
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
     if (token) {
-      setUser({ id: 1, fullName: "Nguyen Van A", avatar: null });
+      setUser({
+        id: 1,
+        fullName: "Nguyen Van A",
+        email: "vana@example.com",
+        userId: "U001",
+        roleId: "R01",
+        avatar: null,
+      });
       setCartCount(3);
     }
     setHotWatches(sampleProducts);
   }, []);
 
   const handleLogin = () => {
-    console.log("redirect to login");
+    setAuthOpen(true); // ✅ mở modal thay vì console.log
   };
 
   const handleSearch = () => {
@@ -81,7 +90,6 @@ export default function App() {
 
       <main>
         <Routes>
-          {/* Trang chủ */}
           <Route
             path="/"
             element={
@@ -107,7 +115,6 @@ export default function App() {
                       </Box>
                     </Typography>
 
-                    {/* Tabs Categories */}
                     <Box
                       sx={{
                         display: "flex",
@@ -135,7 +142,6 @@ export default function App() {
                       </Paper>
                     </Box>
 
-                    {/* Grid */}
                     <Grid container spacing={3}>
                       {hotWatches.slice(0, 5).map((p) => (
                         <Grid
@@ -154,7 +160,6 @@ export default function App() {
                       ))}
                     </Grid>
 
-                    {/* Nút xem thêm → sang /shop */}
                     <Box textAlign="center" sx={{ mt: 4 }}>
                       <Button
                         variant="contained"
@@ -169,18 +174,22 @@ export default function App() {
               </>
             }
           />
-
-          {/* Các trang khác */}
           <Route path="/shop" element={<Store />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/favorites" element={<Favorites />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>
 
       <Footer />
 
-      {/* Floating Contact Buttons */}
+      {/* ✅ Modal login/register */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setAuthOpen(false)}
+        initialMode="login"
+      />
+
       <Box
         sx={{
           position: "fixed",
