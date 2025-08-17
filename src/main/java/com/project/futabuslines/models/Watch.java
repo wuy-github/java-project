@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Entity
 @Table(name = "watches")
 @Data
@@ -35,10 +37,15 @@ public class Watch {
     @Column(name = "price")
     private Integer price;
 
+    private Integer quantity;
+
     @Column(name = "status")
     private String status; // Ben seller co the chinh sua, gom 2 trang thai la da ban, con hang
 
     @Column(name ="is_active")
     private boolean isActive; // Duoc duyet + con hang -> is active = 1  => duoc hien thi tren store
                              // Chua duoc duyet | het hang -> is active = 0 => khong duoc hien thi
+
+    @OneToMany(mappedBy = "watch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<WatchImage> images;
 }

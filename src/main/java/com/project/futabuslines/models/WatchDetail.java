@@ -1,5 +1,6 @@
 package com.project.futabuslines.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,8 +18,8 @@ public class WatchDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "watch_id")
+    @OneToOne
+    @JoinColumn(name = "watch_id", unique = true)
     private Watch watch;
 
     private String gender;
@@ -32,4 +33,30 @@ public class WatchDetail {
 
     @Column(name = "glass_type")
     private String glassType;
+
+    // Duong kinh
+    private String diameter;
+
+    // Chat lieu vo
+    @Column(name = "case_material")
+    private String caseMaterial;
+
+    // Chat lieu day
+    @Column(name = "band_material")
+    private String bandMaterial;
+
+    // Do chiu nuoc
+    @Column(name = "water_resistance")
+    private String waterResistance;
+
+    // Tinh nang
+    private String features;
+
+    // Mau mat dong ho
+    @Column(name = "dial_color")
+    private String dialColor;
+
+    // Xuat xu thuong hieu
+    private String origin;
+
 }
