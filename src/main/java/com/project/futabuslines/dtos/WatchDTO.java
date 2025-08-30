@@ -1,5 +1,6 @@
 package com.project.futabuslines.dtos;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class WatchDTO {
+
     private String name;
 
     @JsonProperty("user_id")

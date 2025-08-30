@@ -1,9 +1,10 @@
 package com.project.futabuslines.controllers;
 
+import com.project.futabuslines.components.AuthUtil;
+import com.project.futabuslines.components.ValidationUtil;
 import com.project.futabuslines.dtos.OrderDTO;
 import com.project.futabuslines.dtos.PaymentDTO;
 import com.project.futabuslines.models.Order;
-import com.project.futabuslines.models.User;
 import com.project.futabuslines.responses.OrderResponse;
 import com.project.futabuslines.services.IOrderService;
 import com.project.futabuslines.services.MomoService;
@@ -14,10 +15,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.awt.image.BufferedImage;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -31,26 +34,23 @@ public class OrderController {
     private final IOrderService orderService;
     private final VnpayService vnpayService;
     private final MomoService momoService;
+    private final ValidationUtil validationUtil;
+    private final AuthUtil authUtil;
 
-    // POST: http://localhost:8088/api/v1/orders
-    @PostMapping("")
+    // POST: http://localhost:8088/api/v1/orders/create
+    @PostMapping("create")
     public ResponseEntity<?> createOrder(
             @RequestBody @Valid OrderDTO orderDTO,
-            BindingResult result
-    ){
-        try {
-            if(result.hasErrors()){
-                List<String> errorMessage = result.getFieldErrors()
-                        .stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
-                return ResponseEntity.badRequest().body(errorMessage);
-            }
-            OrderResponse orderResponse = orderService.createOrder(orderDTO, orderDTO.getOrderDetails());
-            return ResponseEntity.ok(orderResponse);
-        }catch (Exception e){
-            return ResponseEntity.badRequest().body(e.getMessage());
+            BindingResult result,
+            @RequestHeader(value = "Authorization", required = false) String token
+    ) throws Exception {
+        if (validationUtil.hasErrors(result)) {
+            return ResponseEntity.badRequest().body(validationUtil.getErrorMessages(result));
         }
+        Long userId = authUtil.extractUserIdFromToken(token);
+        OrderResponse orderResponse = orderService.createOrder(orderDTO, orderDTO.getOrderDetails(),userId);
+        URI location = URI.create("/api/v1/appraisal/" + orderResponse.getId());
+        return ResponseEntity.created(location).body(orderResponse);
     }
 
     // GET: http://localhost:8088/api/v1/orders/user/{userID}
@@ -80,11 +80,13 @@ public class OrderController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateOrder(
             @Valid @PathVariable Long id,
-            @Valid @RequestBody OrderDTO orderDTO
+            @Valid @RequestBody OrderDTO orderDTO,
+            @RequestHeader(value = "Authorization", required = false) String token
     ){
 
         try {
-            OrderResponse order = orderService.updateOrder(id, orderDTO);
+            Long userId = authUtil.extractUserIdFromToken(token);
+            OrderResponse order = orderService.updateOrder(id, orderDTO, userId);
             return ResponseEntity.ok(order);
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -102,7 +104,7 @@ public class OrderController {
     }
 
     @PostMapping("/payment")
-    public ResponseEntity<?> paymentTicket(@RequestBody PaymentDTO paymentDTO, HttpServletRequest request) {
+        public ResponseEntity<?> paymentTicket(@RequestBody PaymentDTO paymentDTO, HttpServletRequest request) {
         try {
             Object result = orderService.paymentOrder(paymentDTO, request);
             return ResponseEntity.ok(result);

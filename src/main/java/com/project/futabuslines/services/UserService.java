@@ -13,6 +13,7 @@ import com.project.futabuslines.repositories.TokenRepository;
 import com.project.futabuslines.repositories.UserImageRepository;
 import com.project.futabuslines.repositories.UserRepository;
 import com.project.futabuslines.responses.LoginResponseDTO;
+import com.project.futabuslines.responses.UserDetailResponse;
 import com.project.futabuslines.responses.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -40,6 +41,7 @@ public class UserService implements IUserService{
     private final JwtTokenUtil jwtTokenUtil;
     private final TokenRepository tokenRepository;
     private final AuthenticationManager authenticationManager;
+    private final EntityFinder entityFinder;
     @Override
     public User createUser(UserDTO userDTO) throws Exception {
         String phoneNumber = userDTO.getPhoneNumber();
@@ -189,6 +191,11 @@ String token = jwtTokenUtil.generateToken(existingUser);
     }
 
     @Override
+    public List<UserDetailResponse> getAll(){
+        return List.of();
+    }
+
+    @Override
     public UserResponse findById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ID người dùng không đúng hoặc không tồn tại."));
@@ -218,6 +225,11 @@ String token = jwtTokenUtil.generateToken(existingUser);
     @Override
     public User getUserById(long userId) throws Exception {
         return userRepository.findById(userId).orElseThrow(()->new DataNotFoundException("Cannot find product with id: " + userId));
+    }
+    @Override
+    public UserDetailResponse getUser(long userId) throws Exception {
+        User user = entityFinder.findUserById(userId);
+        return UserDetailResponse.fromUser(user);
     }
 
     @Override

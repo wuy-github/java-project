@@ -23,7 +23,7 @@ public class BrandService implements IBrandService{
     public Brand createBrand(BrandDTO brandDTO) throws ResourceAlreadyExistsException {
         boolean exists = brandRepository.existsByNameIgnoreCase(brandDTO.getName());
         if (exists) {
-            throw new ResourceAlreadyExistsException("Category with name '" + brandDTO.getName() + "' already exists.");
+            throw new ResourceAlreadyExistsException("Brand with name '" + brandDTO.getName() + "' already exists.");
         }
         Brand newBrand = Brand.builder()
                 .name(brandDTO.getName())
@@ -49,7 +49,7 @@ public class BrandService implements IBrandService{
     public Brand updateBrand(long id, BrandDTO brandDTO) throws ResourceAlreadyExistsException, DataNotFoundException {
         boolean exists = brandRepository.existsByNameIgnoreCase(brandDTO.getName());
         if (exists) {
-            throw new ResourceAlreadyExistsException("Category with name '" + brandDTO.getName() + "' already exists.");
+            throw new ResourceAlreadyExistsException("Brand with name '" + brandDTO.getName() + "' already exists.");
         }
         Brand existingBrand = getBrandById(id);
         existingBrand.setName(brandDTO.getName());

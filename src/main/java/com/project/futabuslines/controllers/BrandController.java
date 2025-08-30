@@ -11,6 +11,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -26,13 +27,14 @@ public class BrandController {
     public ResponseEntity<?> createBrand(
             @Valid @RequestBody BrandDTO brandDTO,
             BindingResult result
-            ){
+    ){
         if (validationUtil.hasErrors(result)) {
             return ResponseEntity.badRequest().body(validationUtil.getErrorMessages(result));
         }
         try {
             Brand brand = brandService.createBrand(brandDTO);
-            return ResponseEntity.ok(brand);
+            URI location = URI.create("/api/v1/brand/" + brand.getId());
+            return ResponseEntity.created(location).body(brand);
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -64,14 +66,14 @@ public class BrandController {
     public ResponseEntity<?> updateBrand(
             @PathVariable long id,
             @Valid @RequestBody BrandDTO brandDTO,
-                BindingResult result
+            BindingResult result
     ){
         if (validationUtil.hasErrors(result)) {
             return ResponseEntity.badRequest().body(validationUtil.getErrorMessages(result));
         }
         try {
             Brand brand = brandService.updateBrand(id, brandDTO);
-            return ResponseEntity.ok(brand + "\nUpdate Brand Successfully");
+            return ResponseEntity.ok(brand);
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }

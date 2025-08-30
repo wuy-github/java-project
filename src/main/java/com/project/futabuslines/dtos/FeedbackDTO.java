@@ -14,8 +14,6 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class FeedbackDTO {
-    @JsonProperty("user_id")
-    private Long userId;
 
     @JsonProperty("watch_id")
     private Long watchId;
@@ -23,9 +21,6 @@ public class FeedbackDTO {
     private Integer rating;
 
     private String description;
-
-    @Column(name = "image_url", length = 300)
     private String imageUrls;
-
     private List<MultipartFile> files;
 }

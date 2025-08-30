@@ -37,4 +37,8 @@ public class Appraisal extends BaseEntity {
     // Bao cao tham dinh
     @Column(name = "appraisal_report")
     private String appraisalReport;
+
+    // Tinh trang phe duyet
+    @Column(name = "is_active")
+    private Boolean isActive;
 }

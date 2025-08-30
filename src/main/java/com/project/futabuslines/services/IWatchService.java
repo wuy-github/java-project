@@ -22,10 +22,7 @@ public interface IWatchService {
     Watch updateWatch(long id, UpdateWatchDTO watchDTO) throws DataNotFoundException;
     void deleteWatch(long id) throws DataNotFoundException;
     void updateStatus(long id, WatchStatus status) throws DataNotFoundException;
-//    List<WatchUserViewResponse> getAllWatchesForUser(Long userId);
-//    List<WatchUserViewResponse> getAllWatches(Long userId);
     WatchImage uploadWatchImage(long watchId, WatchImageDTO watchImageDTO) throws Exception;
-//    Page<WatchUserViewResponse> getAllWatch(PageRequest pageRequest);
-//    Page<WatchUserViewResponse> getAllWatch(PageRequest pageRequest, Long userId);
     Page<WatchUserViewResponse> getWatchesByBrandAndCategory(String brandName, String categoryName, PageRequest pageRequest, Long userId);
+    Page<Watch> getWatches(PageRequest pageRequest);
 }

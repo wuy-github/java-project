@@ -43,8 +43,8 @@ public class OrderService implements IOrderService{
 
     @Override
     @Transactional
-    public OrderResponse createOrder(OrderDTO orderDTO, List<OrderDetailDTO> orderDetails) throws Exception {
-        User user = entityFinder.findUserById(orderDTO.getUserId());
+    public OrderResponse createOrder(OrderDTO orderDTO, List<OrderDetailDTO> orderDetails, Long userId) throws Exception {
+        User user = entityFinder.findUserById(userId);
 
         modelMapper.typeMap(OrderDTO.class, Order.class)
                 .addMappings(mapper -> mapper.skip(Order::setId));
@@ -116,13 +116,9 @@ public class OrderService implements IOrderService{
     }
 
     @Override
-    public OrderResponse updateOrder(Long id, OrderDTO orderDTO) throws DataNotFoundException {
-        Order order = orderRepository
-                .findById(id)
-                .orElseThrow(()->new DataNotFoundException("Cannot find order with id: "+ id));
-        User existingUser = userRepository
-                .findById(orderDTO.getUserId())
-                .orElseThrow(()->new DataNotFoundException("Cannot find user with id: "+ orderDTO.getUserId()));
+    public OrderResponse updateOrder(Long id, OrderDTO orderDTO, Long userId) throws DataNotFoundException {
+        Order order = entityFinder.findOrderById(id);
+        User existingUser = entityFinder.findUserById(userId);
         modelMapper.typeMap(OrderDTO.class, Order.class)
                 .addMappings(mapper -> mapper.skip(Order::setId));
         modelMapper.map(orderDTO, order);

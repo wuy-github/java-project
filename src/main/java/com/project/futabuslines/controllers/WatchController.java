@@ -146,7 +146,7 @@ public class WatchController {
                             .body("File must be an image");
                 }
                 // Luu file va cap nhat thumbnail trong DTO
-                String filename = fileStorageUtil.storeFile(file);
+                String filename = fileStorageUtil.storeImageFile(file);
                 WatchImage watchImage = watchService.uploadWatchImage(
                         existingWatch.getId(),
                         WatchImageDTO.builder()
@@ -164,20 +164,6 @@ public class WatchController {
         }
 
     }
-
-    // Lay toan bo watch (chua phan trang) - da response
-//    @GetMapping("/watches")
-//    public ResponseEntity<?> getAllWatches(@RequestHeader(value = "Authorization", required = false) String token) {
-//        Long userId = null;
-//
-//        if (token != null && token.startsWith("Bearer ")) {
-//            String jwt = token.substring(7);
-//            userId = jwtTokenUtil.extractUserId(jwt);
-//        }
-//
-//        List<WatchUserViewResponse> response = watchService.getAllWatches(userId);
-//        return ResponseEntity.ok(response);
-//    }
 
     @GetMapping("")
     public ResponseEntity<?> getWatch(
@@ -211,6 +197,28 @@ public class WatchController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/watches")
+    public ResponseEntity<?> getWatches(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "9") int limit
+    ) {
+        try {
+            PageRequest pageRequest = PageRequest.of(page - 1, limit); // page start from 0
+            Page<Watch> watchPage = watchService.getWatches(pageRequest);
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "watches", watchPage.getContent(),
+                            "totalPage", watchPage.getTotalPages()
+                    )
+            );
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
 
 
 }

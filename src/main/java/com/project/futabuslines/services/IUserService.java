@@ -5,6 +5,7 @@ import com.project.futabuslines.exceptions.DataNotFoundException;
 import com.project.futabuslines.models.User;
 import com.project.futabuslines.models.UserImage;
 import com.project.futabuslines.responses.LoginResponseDTO;
+import com.project.futabuslines.responses.UserDetailResponse;
 import com.project.futabuslines.responses.UserResponse;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +22,13 @@ public interface IUserService {
     void deleUser(Long id);
 
     List<User> getAllUser();
-
+    List<UserDetailResponse> getAll();
     UserResponse findById(Long id);
     void resetPassword(ResetPasswordDTO dto) throws Exception;
 
 
     UserImage uploadUserImage(Long userId, UserImageDTO userImageDTO) throws Exception;
+    UserDetailResponse getUser(long userId) throws Exception;
     User getUserById(long userId) throws Exception;
     List<User> getAllUsers();
     long countNewUsersLast7Days();

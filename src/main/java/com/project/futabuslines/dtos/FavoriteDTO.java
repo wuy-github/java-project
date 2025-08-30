@@ -9,9 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FavoriteDTO {
-    @JsonProperty("user_id")
-    private Long userId;
-
     @JsonProperty("watch_id")
     private Long watchId;
 }

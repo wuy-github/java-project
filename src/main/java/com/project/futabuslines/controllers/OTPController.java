@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("${api.prefix}/otp")
 @RequiredArgsConstructor
-public class OTPController {
+public class    OTPController {
     private final OTPService otpService;
 
     // POST: http://localhost:8080/api/v1/otp/send

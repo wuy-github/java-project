@@ -10,7 +10,8 @@ import java.util.List;
 
 @Service
 public interface ICartService {
-    Cart addCart(CartDTO cartDTO, Long userId) throws DataNotFoundException;
-    List<Cart> getCartByUserId(long userId);
-    void deleteCart(long id);
+    CartResponse addCart(CartDTO cartDTO, Long userId) throws DataNotFoundException;
+    List<CartResponse> getCartByUserId(long userId);
+    CartResponse decreaseQuantity(CartDTO cartDTO, Cart cart) throws DataNotFoundException;
+    void deleteCart(long id) throws DataNotFoundException;
 }

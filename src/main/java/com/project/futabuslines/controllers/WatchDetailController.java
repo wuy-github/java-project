@@ -25,7 +25,7 @@ public class WatchDetailController {
     private final IWatchDetailService watchDetailService;
     private final JwtTokenUtil jwtTokenUtil;
 
-    @PostMapping("create-watch-detail")
+    @PostMapping("create")
     public ResponseEntity<?> createWatchDetail(
             @Valid @RequestBody WatchDetailDTO watchDetailDTO,
             BindingResult result

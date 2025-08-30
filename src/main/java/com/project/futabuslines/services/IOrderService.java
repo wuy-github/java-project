@@ -13,9 +13,9 @@ import java.util.List;
 
 @Service
 public interface IOrderService {
-    OrderResponse createOrder(OrderDTO orderDTO, List<OrderDetailDTO> orderDetails) throws Exception;
+    OrderResponse createOrder(OrderDTO orderDTO, List<OrderDetailDTO> orderDetails, Long userId) throws Exception;
     Order getOrder(Long id);
-    OrderResponse updateOrder(Long id, OrderDTO orderDTO) throws DataNotFoundException;
+    OrderResponse updateOrder(Long id, OrderDTO orderDTO, Long userId) throws DataNotFoundException;
     void deleteOrder(Long id);
     List<Order> findByUserId(Long userId);
     Object paymentOrder(PaymentDTO paymentDTO, HttpServletRequest request);

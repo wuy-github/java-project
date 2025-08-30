@@ -1,13 +1,17 @@
 package com.project.futabuslines.controllers;
 
+import com.project.futabuslines.components.AuthUtil;
+import com.project.futabuslines.components.ValidationUtil;
 import com.project.futabuslines.dtos.FeedbackDTO;
 import com.project.futabuslines.exceptions.DataNotFoundException;
 import com.project.futabuslines.models.Feedback;
 import com.project.futabuslines.repositories.FeedbackRepository;
+import com.project.futabuslines.responses.FeedbackResponse;
 import com.project.futabuslines.services.FeedbackService;
 import com.project.futabuslines.components.FileStorageUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,37 +32,37 @@ import java.util.Objects;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("${api.prefix}/feedbacks")
+@RequestMapping("${api.prefix}/feedback")
 @RequiredArgsConstructor
 public class FeedbackController {
 
     private final FeedbackService feedbackService;
     private final FeedbackRepository feedbackRepository;
     private final FileStorageUtil fileStorageUtil;
+    private final ValidationUtil validationUtil;
+    private final AuthUtil authUtil;
 
     // POST: http://localhost:8080/api/v1/notifications
-    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadFeedback(
             @Valid @ModelAttribute FeedbackDTO feedbackDTO,
-            BindingResult result
+            BindingResult result,
+            @RequestHeader(value = "Authorization", required = false) String token
     ) {
+        if (validationUtil.hasErrors(result)) {
+            return ResponseEntity.badRequest().body(validationUtil.getErrorMessages(result));
+        }
         try {
-            if (result.hasErrors()) {
-                List<String> errorMessages = result.getFieldErrors()
-                        .stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
-                return ResponseEntity.badRequest().body(errorMessages);
+            Long userId = authUtil.extractUserIdFromToken(token);
+            if(userId == null){
+                return ResponseEntity.badRequest().body("User Id not null");
             }
-
             List<MultipartFile> files = feedbackDTO.getFiles();
             files = (files == null) ? new ArrayList<>() : files;
-
             if (files.size() > 3) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Chỉ được phép tải lên tối đa 3 ảnh.");
             }
-
             List<String> imageNames = new ArrayList<>();
 
             for (MultipartFile file : files) {
@@ -75,7 +79,7 @@ public class FeedbackController {
                             .body("File must be an image");
                 }
 
-                String filename = fileStorageUtil.storeFile(file); // ✅ GỌI TỪ UTILITY
+                String filename = fileStorageUtil.storeImageFile(file); // ✅ GỌI TỪ UTILITY
                 imageNames.add(filename);
             }
 
@@ -83,8 +87,8 @@ public class FeedbackController {
             feedbackDTO.setImageUrls(
                     String.join(",", imageNames));
 
-            Feedback feedback = feedbackService.createFeedback(
-                    feedbackDTO.getUserId(), feedbackDTO
+            FeedbackResponse feedback = feedbackService.createFeedback(
+                    userId, feedbackDTO
             );
             return ResponseEntity.ok(feedback);
 
@@ -93,74 +97,57 @@ public class FeedbackController {
         }
     }
 
-
-    private String storeFile(MultipartFile file) throws IOException {
-        if (!isImageFile(file) || file.getOriginalFilename() == null) {
-            throw new IOException("Invalid image format");
-        }
-        // Lay ten file goc va lam sach => An toan hop le
-        String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        // Them UUID vao truoc ten file de dam bao ten file la duy nhat
-        String uniqueFilename = UUID.randomUUID().toString() + "_" + filename;
-        // Duong dan den thu muc muon luu file
-        Path uploadDir = Paths.get("uploads");
-        // Kiem tra va tao thuc muc neu no khong ton tai
-        if (!Files.exists(uploadDir)) {
-            Files.createDirectories(uploadDir);
-        }
-        // Duong dan den file day du
-        Path destination = Paths.get(uploadDir.toString(), uniqueFilename);
-        // Sao chep file vao thu muc dich
-        Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
-        return uniqueFilename;
-    }
-
-    private boolean isImageFile(MultipartFile file) {
-        String contentType = file.getContentType();
-        return contentType != null && contentType.startsWith("image/");
-    }
-
-    @GetMapping("/user/{userId}")
+    @GetMapping("/get-user/{userId}")
     public ResponseEntity<?> getFeedbacksByUserId(@PathVariable Long userId) {
         try {
-            List<Feedback> feedbacks = feedbackService.getFeedbacksByUserId(userId);
+            List<FeedbackResponse> feedbacks = feedbackService.getFeedbacksByUserId(userId);
             return ResponseEntity.ok(feedbacks);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // PUT: http://localhost:8080/api/v1/notifications/read/{id}
-    @PutMapping("/read/{id}")
-    public ResponseEntity<String> markAsRead(@PathVariable Long id) {
-        Feedback feedback = feedbackRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo"));
-        feedbackRepository.save(feedback);
-        return ResponseEntity.ok("Đã cập nhật trạng thái thông báo");
-    }
-
-    // GET: http://localhost:8080/api/v1/notifications/{id}
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getFeedbackDetail(@PathVariable Long id) {
+    @GetMapping("/get-watch/{watchId}")
+    public ResponseEntity<?> getFeedbackByWatchId(@PathVariable Long watchId) {
         try {
-            Feedback feedback = feedbackService.getFeedbackDetailById(id);
-            return ResponseEntity.ok(feedback);
-        } catch (DataNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi: " + e.getMessage());
-        }
-    }
-
-    // GET: http://localhost:8080/api/v1/notifications
-    @GetMapping("")
-    public ResponseEntity<?> getAllFeedbacks() {
-        try {
-            List<Feedback> feedbacks = feedbackRepository.findAll();
-
+            List<FeedbackResponse> feedbacks = feedbackService.getFeedbackByWatchId(watchId);
             return ResponseEntity.ok(feedbacks);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi: " + e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/get/{id}")
+    public ResponseEntity<?> getFeedbackById(@PathVariable Long id) {
+        try{
+            FeedbackResponse feedback = feedbackService.getFeedbackDetailById(id);
+            return ResponseEntity.ok(feedback);
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/get-all")
+    public ResponseEntity<?> getAllFeedback(){
+        try{
+            List<FeedbackResponse> feedback = feedbackService.getAllFeedBack();
+            return ResponseEntity.ok(feedback);
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteFeedback(
+            @PathVariable Long id
+    ){
+        try{
+            feedbackService.deleteFeedback(id);
+            return ResponseEntity.ok("Delete successfully");
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
 }

@@ -12,6 +12,7 @@ import com.project.futabuslines.responses.WatchUserViewResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -138,6 +139,13 @@ public class WatchService implements IWatchService{
             String imageUrl = watchImage.map(WatchImage::getImageUrl).orElse(null);
             return WatchUserViewResponse.fromWatchView(watch, isFavorite, imageUrl);
         });
+    }
+
+    @Override
+    public Page<Watch> getWatches(PageRequest pageRequest) {
+
+        Page<Watch> watches = watchRepository.findAll(pageRequest);
+        return watches;
     }
 
 //    @Scheduled(fixedRate = 3600)

@@ -1,7 +1,14 @@
 package com.project.futabuslines.exceptions;
 
-public class DataNotFoundException extends Exception{
-    public DataNotFoundException(String message){
+import lombok.Getter;
+
+@Getter
+public class DataNotFoundException extends Exception {
+    private final String errorCode;
+
+    public DataNotFoundException(String message) {
         super(message);
+        this.errorCode = "DATA_NOT_FOUND";
     }
+
 }

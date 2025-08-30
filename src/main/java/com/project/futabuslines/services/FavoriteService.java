@@ -9,12 +9,14 @@ import com.project.futabuslines.models.Watch;
 import com.project.futabuslines.repositories.FavoriteRepository;
 import com.project.futabuslines.repositories.UserRepository;
 import com.project.futabuslines.repositories.WatchRepository;
+import com.project.futabuslines.responses.FavoriteResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +28,8 @@ public class FavoriteService implements IFavoriteService{
     private final EntityFinder entityFinder;
 
     @Override
-    public Favorite addFavorite(FavoriteDTO favoriteDTO) throws DataNotFoundException, ResourceAlreadyExistsException {
-        User user = entityFinder.findUserById(favoriteDTO.getUserId());
+    public FavoriteResponse addFavorite(FavoriteDTO favoriteDTO, Long userId) throws DataNotFoundException, ResourceAlreadyExistsException {
+        User user = entityFinder.findUserById(userId);
         Watch watch = entityFinder.findWatchById(favoriteDTO.getWatchId());
 
         Optional<Favorite> existingFavorite = favoriteRepository.findByUserAndWatch(user, watch);
@@ -42,13 +44,17 @@ public class FavoriteService implements IFavoriteService{
                 .isActive(true)
                 .build();
 
-        return favoriteRepository.save(favorite);
+        favoriteRepository.save(favorite);
+        return FavoriteResponse.fromFavorite(favorite);
     }
 
 
     @Override
-    public List<Favorite> getFavoriteByUserId(long userId) {
-        return favoriteRepository.findByUserId(userId);
+    public List<FavoriteResponse> getFavoriteByUserId(long userId) {
+        List<Favorite> favorites = favoriteRepository.findByUserId(userId);
+        return favorites.stream()
+                .map(FavoriteResponse::fromFavorite)
+                .collect(Collectors.toList());
     }
 
     @Override

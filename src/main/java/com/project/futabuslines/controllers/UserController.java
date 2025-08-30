@@ -1,11 +1,13 @@
 package com.project.futabuslines.controllers;
 
+import com.project.futabuslines.components.AuthUtil;
 import com.project.futabuslines.dtos.*;
 import com.project.futabuslines.models.Token;
 import com.project.futabuslines.models.User;
 import com.project.futabuslines.models.UserImage;
 import com.project.futabuslines.repositories.TokenRepository;
 import com.project.futabuslines.responses.LoginResponseDTO;
+import com.project.futabuslines.responses.UserDetailResponse;
 import com.project.futabuslines.responses.UserResponse;
 import com.project.futabuslines.services.IUserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,6 +39,7 @@ import java.util.UUID;
 public class UserController {
     private final TokenRepository tokenRepository;
     private final IUserService userService;
+    private final AuthUtil authUtil;
 
     // POST: http://localhost:8080/api/v1/users/register
     @PostMapping("/register")
@@ -192,12 +195,23 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    // GET: // POST: http://localhost:8080/api/v1/users/get-user/{id}
-    @GetMapping("get-user/{id}")
-    public ResponseEntity<?> getInforUser(@PathVariable Long id) {
-        try {
+    @GetMapping("get-info")
+    public ResponseEntity<UserResponse> getInfoUser(
+            @RequestHeader(value = "Authorization", required = false) String token
+    ){
+        Long userId = authUtil.extractUserIdFromToken(token);
+        UserResponse user = userService.findById(userId);
+        return ResponseEntity.ok(user);
+    }
 
-            User user = userService.getUserById(id);
+    // GET: // POST: http://localhost:8080/api/v1/users/get-user/{id}
+    @GetMapping("get-user")
+    public ResponseEntity<?> getInforUser(
+            @RequestHeader(value = "Authorization", required = false) String token
+    ){
+        try {
+            Long userId = authUtil.extractUserIdFromToken(token);
+            UserDetailResponse user = userService.getUser(userId);
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +25,7 @@ public class CartService implements ICartService{
     private final EntityFinder entityFinder;
 
     @Override
-    public Cart addCart(CartDTO cartDTO, Long userId) throws DataNotFoundException {
+    public CartResponse addCart(CartDTO cartDTO, Long userId) throws DataNotFoundException {
         User user = entityFinder.findUserById(userId);
         Watch watch = entityFinder.findWatchById(cartDTO.getWatchId());
 
@@ -32,7 +33,10 @@ public class CartService implements ICartService{
             throw new IllegalArgumentException("Quantity must be greater than 0");
         }
 
-        // Neu het hang thi sao
+        if(watch.getQuantity() == 0){
+            throw new IllegalArgumentException("Watch is sold out");
+        }
+
         if (watch.getQuantity() < cartDTO.getQuantity()) {
             throw new IllegalArgumentException("Not enough quantity in stock");
         }
@@ -58,16 +62,36 @@ public class CartService implements ICartService{
                     .build();
         }
 
-        return cartRepository.save(cart);
+        cartRepository.save(cart);
+        return CartResponse.fromCart(cart);
     }
 
     @Override
-    public List<Cart> getCartByUserId(long userId) {
-        return cartRepository.findByUserId(userId);
+    public List<CartResponse> getCartByUserId(long userId) {
+        List<Cart> cart = cartRepository.findByUserId(userId);
+        return cart.stream()
+                .map(CartResponse::fromCart)
+                .collect(Collectors.toList());
+    }
+    @Override
+    public CartResponse decreaseQuantity(CartDTO cartDTO, Cart cart) throws DataNotFoundException {
+        if (cartDTO.getQuantity() <= 0) {
+            throw new IllegalArgumentException("Decrease Quantity must be greater than 0");
+        }
+        int currentQuantity = cart.getQuantity();
+        if (currentQuantity <= cartDTO.getQuantity()) {
+            cartRepository.deleteById(cart.getId());
+            return null;
+        } else {
+            cart.setQuantity(currentQuantity - cartDTO.getQuantity());
+            cartRepository.save(cart);
+            return CartResponse.fromCart(cart);
+        }
     }
 
     @Override
-    public void deleteCart(long id) {
+    public void deleteCart(long id) throws DataNotFoundException {
+        entityFinder.findCartById(id);
         cartRepository.deleteById(id);
     }
 }

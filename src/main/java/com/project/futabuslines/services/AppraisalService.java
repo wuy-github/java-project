@@ -1,32 +1,31 @@
 package com.project.futabuslines.services;
 
 import com.project.futabuslines.dtos.AppraisalDTO;
+import com.project.futabuslines.dtos.AppraisalReportDTO;
 import com.project.futabuslines.exceptions.DataNotFoundException;
 import com.project.futabuslines.exceptions.ResourceAlreadyExistsException;
 import com.project.futabuslines.models.Appraisal;
 import com.project.futabuslines.models.User;
 import com.project.futabuslines.models.Watch;
 import com.project.futabuslines.repositories.AppraisalRepository;
-import com.project.futabuslines.repositories.UserRepository;
-import com.project.futabuslines.repositories.WatchRepository;
+import com.project.futabuslines.responses.AppraisalResponse;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AppraisalService implements IAppraisalService{
-    private final WatchRepository watchRepository;
-    private final UserRepository userRepository;
     private final AppraisalRepository appraisalRepository;
     private final EntityFinder entityFinder;
     private ModelMapper modelMapper;
 
     @Override
-    public Appraisal createAppraisal(AppraisalDTO appraisalDTO, Long userId) throws DataNotFoundException, ResourceAlreadyExistsException {
+    public AppraisalResponse createAppraisal(AppraisalDTO appraisalDTO, Long userId) throws DataNotFoundException, ResourceAlreadyExistsException {
         User user = entityFinder.findUserById(userId);
         Watch watch = entityFinder.findWatchById(appraisalDTO.getWatchId());
 
@@ -35,46 +34,76 @@ public class AppraisalService implements IAppraisalService{
         if(existingAppraisal.isPresent()) {
             throw new ResourceAlreadyExistsException("Da tham dinh san pham nay roi!");
         }
+        Appraisal appraisal = Appraisal.builder()
+                .user(user)
+                .watch(watch)
+                .appraisalValue(appraisalDTO.getAppraisalValue())
+                .authenticity(appraisalDTO.isAuthenticity())
+                .watchCondition(appraisalDTO.getWatchCondition())
+                .isActive(false)
+                .build();
+        Appraisal saved = appraisalRepository.save(appraisal);
+        return AppraisalResponse.fromAppraisal(saved);
+    }
 
-        Appraisal appraisal = modelMapper.map(appraisalDTO, Appraisal.class);
-        appraisal.setUser(user);
-        appraisal.setWatch(watch);
+    @Override
+    public Appraisal uploadAppraisalReport(long appraisalId, AppraisalReportDTO appraisalReportDTO) throws Exception {
+        Appraisal appraisal = entityFinder.findAppraisalById(appraisalId);
+        appraisal.setAppraisalReport(appraisalReportDTO.getAppraisalReport());
         return appraisalRepository.save(appraisal);
     }
 
     @Override
-    public List<Appraisal> getAllAppraisal() {
-        return appraisalRepository.findAll();
+    public List<AppraisalResponse> getAllAppraisal() {
+        List<Appraisal> appraisals = appraisalRepository.findAll();
+        return convertToResponseList(appraisals);
     }
 
     @Override
-    public Appraisal getAppraisalById(long id) throws DataNotFoundException {
-        return appraisalRepository.findById(id)
-                .orElseThrow(()-> new DataNotFoundException("Khong tim thay ket qua voi id nay"));
+    public AppraisalResponse getAppraisalById(long id) throws DataNotFoundException {
+        Appraisal appraisal = entityFinder.findAppraisalById(id);
+        return AppraisalResponse.fromAppraisal(appraisal);
     }
 
     @Override
-    public List<Appraisal> getAppraisalByUserId(long userId) {
-        return appraisalRepository.findByUserId(userId);
+    public List<AppraisalResponse> getAppraisalByUserId(long userId) {
+        List<Appraisal> appraisals = appraisalRepository.findByUserId(userId);
+        return convertToResponseList(appraisals);
     }
 
     @Override
-    public List<Appraisal> getAppraisalByWatchId(long watchId) {
-        return appraisalRepository.findByWatchId(watchId);
+    public List<AppraisalResponse> getAppraisalByWatchId(long watchId) {
+        List<Appraisal> appraisals = appraisalRepository.findByWatchId(watchId);
+        return convertToResponseList(appraisals);
     }
 
     @Override
-    public Appraisal updateAppraisal(long id, AppraisalDTO appraisalDTO, Long userId) throws DataNotFoundException {
-        Appraisal existingAppraisal = getAppraisalById(id);
-        User user = entityFinder.findUserById(userId);
-        Watch watch = entityFinder.findWatchById(appraisalDTO.getWatchId());
+    public AppraisalResponse updateAppraisal(long id, AppraisalDTO appraisalDTO, Long userId) throws DataNotFoundException {
+        Appraisal existingAppraisal = entityFinder.findAppraisalById(id);
+        entityFinder.findUserById(userId);
 
-        modelMapper.map(appraisalDTO, existingAppraisal);
-        return appraisalRepository.save(existingAppraisal);
+        existingAppraisal.setAppraisalValue(appraisalDTO.getAppraisalValue());
+        existingAppraisal.setAuthenticity(appraisalDTO.isAuthenticity());
+        existingAppraisal.setWatchCondition(appraisalDTO.getWatchCondition());
+        appraisalRepository.save(existingAppraisal);
+        return AppraisalResponse.fromAppraisal(existingAppraisal);
     }
 
     @Override
-    public void deleteAppraisal(long id) {
+    public void deleteAppraisal(long id) throws DataNotFoundException {
+        entityFinder.findAppraisalById(id);
         appraisalRepository.deleteById(id);
     }
+
+    @Override
+    public Appraisal findById(Long id) throws DataNotFoundException {
+        return entityFinder.findAppraisalById(id);
+    }
+
+    private List<AppraisalResponse> convertToResponseList(List<Appraisal> appraisals) {
+        return appraisals.stream()
+                .map(AppraisalResponse::fromAppraisal)
+                .collect(Collectors.toList());
+    }
+
 }
