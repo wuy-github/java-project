@@ -1,5 +1,9 @@
 package com.project.futabuslines.services;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.project.futabuslines.dtos.OrderDTO;
 import com.project.futabuslines.dtos.OrderDetailDTO;
 import com.project.futabuslines.dtos.PaymentDTO;
@@ -15,6 +19,8 @@ import com.project.futabuslines.responses.PaymentRedirectResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -46,6 +54,7 @@ public class OrderService implements IOrderService{
     public OrderResponse createOrder(OrderDTO orderDTO, List<OrderDetailDTO> orderDetails, Long userId) throws Exception {
         User user = entityFinder.findUserById(userId);
 
+        // Map Order từ DTO
         modelMapper.typeMap(OrderDTO.class, Order.class)
                 .addMappings(mapper -> mapper.skip(Order::setId));
 
@@ -55,16 +64,17 @@ public class OrderService implements IOrderService{
         order.setOrderDate(new Date());
         order.setStatus(OrderStatus.PENDING);
         order.setActive(true);
+        String trackingNumber = generateUniqueTicketCode();
+        order.setTrackingNumber(trackingNumber);
+
 
         LocalDate shippingDate = orderDTO.getShippingDate() == null ? LocalDate.now() : orderDTO.getShippingDate();
         if (shippingDate.isBefore(LocalDate.now())) {
             throw new DataNotFoundException("Shipping date must be today or later!");
         }
         order.setShippingDate(shippingDate);
-        // Luu de tao order Id
-        orderRepository.save(order);
 
-
+        // Xử lý chi tiết đơn hàng
         int total = 0;
         List<OrderDetail> orderDetailEntities = new ArrayList<>();
 
@@ -76,56 +86,57 @@ public class OrderService implements IOrderService{
                         "Not enough quantity for watch with ID " + watch.getId() + ". Only " + watch.getQuantity() + " left."
                 );
             }
+
             OrderDetail detail = new OrderDetail();
-            detail.setOrder(order);
+            detail.setOrder(order);  // liên kết 2 chiều
             detail.setWatch(watch);
             detail.setPrice(watch.getPrice());
             detail.setQuantity(detailDTO.getQuantity());
 
             int totalMoneyForWatch = watch.getPrice() * detailDTO.getQuantity();
-//            detail.setTotalMoney(totalMoneyForWatch);
+            detail.setTotalMoney(totalMoneyForWatch);
 
             total += totalMoneyForWatch;
             orderDetailEntities.add(detail);
 
+            // Trừ số lượng hàng
             int remainingQuantity = watch.getQuantity() - detailDTO.getQuantity();
             watch.setQuantity(remainingQuantity);
             if (remainingQuantity == 0) {
-                watch.setStatus(String.valueOf(WatchStatus.SOLD_OUT)); // enum ProductStatus phải có SOLD_OUT
+                watch.setStatus(WatchStatus.SOLD_OUT.getValue());
             }
-            watchRepository.saveAll(
-                    orderDetailEntities.stream().map(OrderDetail::getWatch).collect(Collectors.toList())
-            );
-
         }
 
         order.setTotalMoney(total);
-
-        orderRepository.save(order);
-        orderDetailRepository.saveAll(orderDetailEntities);
-
-        modelMapper.typeMap(Order.class, OrderResponse.class);
-        return modelMapper.map(order, OrderResponse.class);
+        order.setOrderDetails(orderDetailEntities); // gắn list detail vào order
+        Order savedOrder = orderRepository.save(order);
+        return OrderResponse.fromOrder(savedOrder);
     }
 
-
     @Override
-    public Order getOrder(Long id) {
-        return orderRepository.findById(id)
-                .orElse(null);
+    public OrderResponse getOrder(Long id) throws DataNotFoundException {
+        Order order = entityFinder.findOrderById(id);
+        return OrderResponse.fromOrder(order);
     }
 
     @Override
     public OrderResponse updateOrder(Long id, OrderDTO orderDTO, Long userId) throws DataNotFoundException {
         Order order = entityFinder.findOrderById(id);
         User existingUser = entityFinder.findUserById(userId);
-        modelMapper.typeMap(OrderDTO.class, Order.class)
-                .addMappings(mapper -> mapper.skip(Order::setId));
-        modelMapper.map(orderDTO, order);
+
+        if (orderDTO.getFullName() != null) order.setFullName(orderDTO.getFullName());
+        if (orderDTO.getPhoneNumber() != null) order.setPhoneNumber(orderDTO.getPhoneNumber());
+        if (orderDTO.getAddress() != null) order.setAddress(orderDTO.getAddress());
+        if (orderDTO.getNote() != null) order.setNote(orderDTO.getNote());
+        if (orderDTO.getShippingMethod() != null) order.setShippingMethod(orderDTO.getShippingMethod());
+        if (orderDTO.getShippingAddress() != null) order.setShippingAddress(orderDTO.getShippingAddress());
+        if (orderDTO.getShippingDate() != null) order.setShippingDate(orderDTO.getShippingDate());
+        if (orderDTO.getPaymentMethod() != null) order.setPaymentMethod(orderDTO.getPaymentMethod());
+        if(orderDTO.getStatus() != null) order.setStatus(orderDTO.getStatus());
         order.setUser(existingUser);
+
         orderRepository.save(order);
-        modelMapper.typeMap(Order.class, OrderResponse.class);
-        return modelMapper.map(order, OrderResponse.class);
+        return OrderResponse.fromOrder(order);
     }
 
     @Override
@@ -140,32 +151,50 @@ public class OrderService implements IOrderService{
     }
 
     @Override
-    public List<Order> findByUserId(Long userId) {
-        return orderRepository.findByUserId(userId);
+    public List<OrderResponse> findByUserId(Long userId) {
+        List<Order> orders = orderRepository.findByUserId(userId);
+        return orders.stream()
+                .map(OrderResponse::fromOrder)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Object paymentOrder(PaymentDTO paymentDTO, HttpServletRequest request) {
-        String clientIp = getClientIp(request);
+    public List<OrderResponse> findAll(){
+        List<Order> orders = orderRepository.findAll();
+        return orders.stream()
+                .map(OrderResponse::fromOrder)
+                .collect(Collectors.toList());
+    }
 
-        Order order = orderRepository.findById(paymentDTO.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy vé với ID đã cung cấp"));
+    @Override
+    public Page<OrderResponse> getAll(PageRequest pageRequest) {
+        Page<Order> orders = orderRepository.findAll(pageRequest);
+        return orders.map(OrderResponse::fromOrder);
+    }
+
+
+    @Override
+    public Object paymentOrder(PaymentDTO paymentDTO, HttpServletRequest request) throws DataNotFoundException {
+        String clientIp = getClientIp(request);
+        Order order = entityFinder.findOrderById(paymentDTO.getOrderId());
 
         String orderId = "ORDER_" + order.getId() + "_" + System.currentTimeMillis();
 
-        long totalMoney = order.getTotalMoney(); // giả sử trả về long
-        int amount = (int) totalMoney; // Đơn vị: đồng
+        long totalMoney = order.getTotalMoney();
+        int amount = (int) totalMoney;
 
         if (paymentDTO.getPaymentMethod().equalsIgnoreCase("VNPAY")) {
+            order.setPaymentMethod("VN-PAY");
             String paymentUrl = vnpayService.createPaymentUrl(orderId, amount, clientIp);
             return new PaymentRedirectResponse(paymentUrl, "Vui lòng truy cập đường dẫn VNPAY để thanh toán.");
         }
 
         if (paymentDTO.getPaymentMethod().equalsIgnoreCase("MOMO")) {
             String paymentUrl = momoService.createPaymentUrl(orderId, amount, clientIp);
+            order.setPaymentMethod("MOMO");
             return new PaymentRedirectResponse(paymentUrl, "Vui lòng truy cập đường dẫn MoMo để thanh toán.");
         }
-
+        orderRepository.save(order);
         return order;
     }
 
@@ -199,5 +228,33 @@ public class OrderService implements IOrderService{
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid order ID format: " + id);
         }
+    }
+
+    private String generateUniqueTicketCode() {
+        return "TIMEPIECE_" + generateRandomAlphaNumeric(6); // 6 ký tự chữ và số
+    }
+
+    private String generateRandomAlphaNumeric(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random();
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+
+    private String generateQRCodeBase64(String content) throws Exception {
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, 200, 200);
+        BufferedImage qrImage = MatrixToImageWriter.toBufferedImage(bitMatrix);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ImageIO.write(qrImage, "png", outputStream);
+        byte[] qrBytes = outputStream.toByteArray();
+
+        // Add this line: prefix required for rendering in HTML <img src="...">
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(qrBytes);
     }
 }

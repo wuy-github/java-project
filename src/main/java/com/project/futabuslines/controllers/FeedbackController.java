@@ -97,9 +97,12 @@ public class FeedbackController {
         }
     }
 
-    @GetMapping("/get-user/{userId}")
-    public ResponseEntity<?> getFeedbacksByUserId(@PathVariable Long userId) {
+    @GetMapping("/get-user")
+    public ResponseEntity<?> getFeedbacksByUserId(
+            @RequestHeader(value = "Authorization", required = false) String token
+    ) {
         try {
+            Long userId = authUtil.extractUserIdFromToken(token);
             List<FeedbackResponse> feedbacks = feedbackService.getFeedbacksByUserId(userId);
             return ResponseEntity.ok(feedbacks);
         } catch (Exception e) {

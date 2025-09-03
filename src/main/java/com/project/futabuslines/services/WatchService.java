@@ -29,15 +29,15 @@ public class WatchService implements IWatchService{
     private final WatchRepository watchRepository;
     private final FavoriteRepository favoriteRepository;
     private final WatchImageRepository watchImageRepository;
-
+    private final UserImageRepository userImageRepository;
     @Override
     // Them dong ho moi
-    public Watch createWatch(WatchDTO watchDTO) throws DataNotFoundException {
+    public Watch createWatch(WatchDTO watchDTO, Long userId) throws DataNotFoundException {
         Brand existingBrand = brandRepository.findById(watchDTO.getBrandId())
                 .orElseThrow(()-> new DataNotFoundException("Cannot found brand with id = " + watchDTO.getBrandId()));
         Category existingCategory = categoryRepository.findById(watchDTO.getCategoryId())
                 .orElseThrow(()-> new DataNotFoundException("Cannot found category with id = " + watchDTO.getCategoryId()));
-        User existingUser = userRepository.findById(watchDTO.getUserId())
+        User existingUser = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("Cannot found user with id = " + watchDTO.getUserId()));
         Watch newWatch = Watch.builder()
                 .name(watchDTO.getName())
@@ -118,12 +118,65 @@ public class WatchService implements IWatchService{
         return watchImageRepository.save(newWatchImage);
     }
 
+//    @Override
+//    public Page<WatchUserViewResponse> getWatchesByBrandAndCategory(
+//            String brandName, String categoryName, PageRequest pageRequest, Long userId) {
+//
+//        Page<Watch> watches = watchRepository.findByBrandAndCategoryName(
+//                brandName, categoryName, pageRequest);
+//        Set<Long> favoriteWatchIds;
+//        if (userId != null) {
+//            List<Favorite> favorites = favoriteRepository.findByUserIdAndIsActiveTrue(userId);
+//            favoriteWatchIds = favorites.stream()
+//                    .map(fav -> fav.getWatch().getId())
+//                    .collect(Collectors.toSet());
+//        } else {
+//            favoriteWatchIds = new HashSet<>();
+//        }
+//        return watches.map(watch -> {
+//            boolean isFavorite = userId != null && favoriteWatchIds.contains(watch.getId());
+//            Optional<WatchImage> watchImage = watchImageRepository.findFirstByWatchId(watch.getId());
+//            String imageUrl = watchImage.map(WatchImage::getImageUrl).orElse(null);
+//            return WatchUserViewResponse.fromWatchView(watch, isFavorite, imageUrl);
+//        });
+//    }
+
+//    @Override
+//    public Page<Watch> getWatches(PageRequest pageRequest) {
+//
+//        Page<Watch> watches = watchRepository.findAll(pageRequest);
+//        return watches;
+//    }
+
+    @Scheduled(fixedRate = 3600)
+    @Transactional
+    public void checkAndUpdateSoldOutWatches() {
+        List<Watch> watches = watchRepository.findAll();
+
+        for (Watch watch : watches) {
+            Integer quantity = watch.getQuantity();
+
+            if (quantity == null || quantity <= 0) {
+                watch.setQuantity(0); // set lại = 0 nếu null hoặc âm
+                watch.setStatus(String.valueOf(WatchStatus.SOLD_OUT));
+            }
+        }
+
+        watchRepository.saveAll(watches); // lưu lại các cập nhật
+    }
+
+    @Override
+    public Page<Watch> getWatches(PageRequest pageRequest) {
+        return watchRepository.findAllByStatusNot(WatchStatus.SOLD_OUT.getValue(), pageRequest);
+    }
+
     @Override
     public Page<WatchUserViewResponse> getWatchesByBrandAndCategory(
             String brandName, String categoryName, PageRequest pageRequest, Long userId) {
 
         Page<Watch> watches = watchRepository.findByBrandAndCategoryName(
-                brandName, categoryName, pageRequest);
+                brandName, categoryName, WatchStatus.SOLD_OUT.getValue(), pageRequest);
+
         Set<Long> favoriteWatchIds;
         if (userId != null) {
             List<Favorite> favorites = favoriteRepository.findByUserIdAndIsActiveTrue(userId);
@@ -133,37 +186,19 @@ public class WatchService implements IWatchService{
         } else {
             favoriteWatchIds = new HashSet<>();
         }
+
         return watches.map(watch -> {
             boolean isFavorite = userId != null && favoriteWatchIds.contains(watch.getId());
             Optional<WatchImage> watchImage = watchImageRepository.findFirstByWatchId(watch.getId());
+            User user = watch.getUser();
+            Optional<UserImage> userImage = user.getUserImages() != null
+                    ? user.getUserImages().stream().findFirst()
+                    : Optional.empty();
+
+            String userImageUrl = userImage.map(UserImage::getImageUrl).orElse(null);
             String imageUrl = watchImage.map(WatchImage::getImageUrl).orElse(null);
-            return WatchUserViewResponse.fromWatchView(watch, isFavorite, imageUrl);
+            return WatchUserViewResponse.fromWatchView(watch, isFavorite, imageUrl, userImageUrl);
         });
     }
-
-    @Override
-    public Page<Watch> getWatches(PageRequest pageRequest) {
-
-        Page<Watch> watches = watchRepository.findAll(pageRequest);
-        return watches;
-    }
-
-//    @Scheduled(fixedRate = 3600)
-//    @Transactional
-//    public void checkAndUpdateSoldOutWatches() {
-//        List<Watch> watches = watchRepository.findAll();
-//
-//        for (Watch watch : watches) {
-//            Integer quantity = watch.getQuantity();
-//
-//            if (quantity == null || quantity <= 0) {
-//                watch.setQuantity(0); // set lại = 0 nếu null hoặc âm
-//                watch.setStatus(String.valueOf(WatchStatus.SOLD_OUT));
-//            }
-//        }
-//
-//        watchRepository.saveAll(watches); // lưu lại các cập nhật
-//    }
-
 
 }

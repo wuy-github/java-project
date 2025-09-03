@@ -16,16 +16,16 @@ public class BaseEntity {
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate(){
         createdAt = LocalDateTime.now();
-        updateAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate(){
-        updateAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 }

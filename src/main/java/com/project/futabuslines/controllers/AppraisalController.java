@@ -36,29 +36,6 @@ public class AppraisalController {
     private final FileService fileService;
     private final EntityFinder entityFinder;
 
-//    @PostMapping("create")
-//    // Chi co chinh chu moi co the tao bang tham dinh moi
-//    // Phan quyen Appraisal
-//    public ResponseEntity<?> createAppraisal(
-//            @Valid @RequestBody AppraisalDTO appraisalDTO,
-//            BindingResult result,
-//            @RequestHeader(value = "Authorization", required = false) String token
-//
-//    ){
-//        if (validationUtil.hasErrors(result)) {
-//            return ResponseEntity.badRequest().body(validationUtil.getErrorMessages(result));
-//        }
-//        try {
-//            Long userId = authUtil.extractUserIdFromToken(token);
-//            AppraisalResponse appraisal = appraisalService.createAppraisal(appraisalDTO, userId);
-//            URI location = URI.create("/api/v1/appraisal/" + appraisal.getId());
-////            return ResponseEntity.ok(appraisal);
-//            return ResponseEntity.created(location).body(appraisal);
-//        }catch (Exception e){
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
-
     @PostMapping("create")
     // Role: Appraisers - Nha tham dinh
     // Thuc hien danh gia

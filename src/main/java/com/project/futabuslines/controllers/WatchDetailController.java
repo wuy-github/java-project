@@ -4,6 +4,7 @@ import com.project.futabuslines.components.JwtTokenUtil;
 import com.project.futabuslines.dtos.UpdateWatchDetailDTO;
 import com.project.futabuslines.dtos.WatchDetailDTO;
 import com.project.futabuslines.models.WatchDetail;
+import com.project.futabuslines.responses.WatchDetailResponse;
 import com.project.futabuslines.responses.WatchDetailViewResponse;
 import com.project.futabuslines.responses.WatchDetailUserViewResponse;
 import com.project.futabuslines.services.IWatchDetailService;
@@ -38,7 +39,7 @@ public class WatchDetailController {
             return ResponseEntity.badRequest().body(errorMessage);
         }
         try {
-            WatchDetail watchDetail = watchDetailService.createWatchDetail(watchDetailDTO);
+            WatchDetailResponse watchDetail = watchDetailService.createWatchDetail(watchDetailDTO);
             return ResponseEntity.ok(watchDetail);
         }
         catch (DataIntegrityViolationException e) {
@@ -50,43 +51,36 @@ public class WatchDetailController {
         }
     }
 
-    @GetMapping("get-all-details")
+    @GetMapping("get-all")
     public ResponseEntity<List<WatchDetail>> getAllWatchDetail(){
         List<WatchDetail> watchDetails = watchDetailService.getAllWatchDetails();
         return ResponseEntity.ok((watchDetails));
     }
 
     @GetMapping("get-detail/{id}")
+    // tim theo id cua detail
     public ResponseEntity<?> getWatchDetailById(@PathVariable long id){
         try {
-            WatchDetail watch = watchDetailService.getWatchDetailById(id);
+            WatchDetailResponse watch = watchDetailService.getWatchDetailById(id);
             return ResponseEntity.ok(watch);
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @GetMapping("get-watch-detail/{watchId}")
+    @GetMapping("get-watch/{watchId}")
+    // tim theo watch id
     public ResponseEntity<?> getWatchDetailByWatchId(@PathVariable long watchId){
         try {
-            WatchDetail watchDetail = watchDetailService.getWatchDetailByWatchId(watchId);
+            WatchDetailResponse watchDetail = watchDetailService.getWatchDetailByWatchId(watchId);
             return ResponseEntity.ok(watchDetail);
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @GetMapping("get-watch-detail-view/{watchId}")
-    public ResponseEntity<?> getWatchDetailView(@PathVariable long watchId){
-        try {
-            WatchDetailViewResponse watchDetail = watchDetailService.getWatchDetailView(watchId);
-            return ResponseEntity.ok(watchDetail);
-        }catch (Exception e){
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @GetMapping("get-watch-detail-user-view/{watchId}")
+    @GetMapping("get-user-view/{watchId}")
+    // kiem tra yeu thich dua vao token user
     public ResponseEntity<?> getWatchDetailUserView(
             @PathVariable("watchId") Long watchId,
             @RequestHeader(value = "Authorization", required = false) String token) {
@@ -107,7 +101,7 @@ public class WatchDetailController {
 
 
 
-    @PutMapping("update-watch-detail/{id}")
+    @PutMapping("update/{id}")
     public ResponseEntity<?> updateWatchDetail(
             @PathVariable long id,
             @Valid @RequestBody UpdateWatchDetailDTO watchDetailDTO,
@@ -122,26 +116,26 @@ public class WatchDetailController {
         }
         try {
             WatchDetail watchDetail = watchDetailService.updateWatchDetail(id, watchDetailDTO);
-            return ResponseEntity.ok(watchDetail);
+            return ResponseEntity.ok("Update success fully");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PatchMapping("update-watch-detail/{id}")
+    @PatchMapping("update-detail/{id}")
     public ResponseEntity<?> updatePartialWatchDetail(
             @PathVariable Long id,
             @RequestBody Map<String, Object> updates) {
         try {
             WatchDetail updated = watchDetailService.updatePartial(id, updates);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok("Update success fully");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
 
-    @DeleteMapping("delete-watch-detail/{id}")
+    @DeleteMapping("delete/{id}")
     public ResponseEntity<String> deteteDetailWatch(
             @PathVariable long id
     ){

@@ -15,7 +15,7 @@ public class OrderDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
 
@@ -29,6 +29,6 @@ public class OrderDetail {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "total_money", nullable = false)
+    @Column(name = "total_money", insertable = false, updatable = false)
     private Integer totalMoney;
 }

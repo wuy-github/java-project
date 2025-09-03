@@ -4,13 +4,12 @@ import lombok.Getter;
 
 @Getter
 public enum WatchStatus {
-        SOLD_OUT("sold-out"),
-        AVAILABLE("available");
+        SOLD_OUT("SOLD_OUT"),
+        AVAILABLE("AVAILABLE");
 
         private final String value;
 
         WatchStatus(String value) {
-            this.value = value;
+                this.value = value;
         }
-
 }

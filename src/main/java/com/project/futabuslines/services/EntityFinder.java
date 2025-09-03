@@ -18,6 +18,7 @@ public class EntityFinder {
     private final AppraisalRepository appraisalRepository;
     private final CartRepository cartRepository;
     private final FeedbackRepository feedbackRepository;
+    private final WatchDetailRepository watchDetailRepository;
 
     public User findUserById(long userId) throws DataNotFoundException {
         return userRepository.findById(userId)
@@ -26,6 +27,10 @@ public class EntityFinder {
     public Watch findWatchById(long watchId) throws DataNotFoundException {
         return watchRepository.findById(watchId)
                 .orElseThrow(()-> new DataNotFoundException("Cannot find watch with id = " + watchId));
+    }
+    public WatchDetail findWatchDetailById(long watchDetailId) throws DataNotFoundException {
+        return watchDetailRepository.findById(watchDetailId)
+                .orElseThrow(()-> new DataNotFoundException("Cannot find watch detail with id = " + watchDetailId));
     }
     public Order findOrderById(long orderId) throws DataNotFoundException {
         return orderRepository.findById(orderId)

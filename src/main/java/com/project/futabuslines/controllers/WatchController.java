@@ -1,11 +1,14 @@
 package com.project.futabuslines.controllers;
 
+import com.project.futabuslines.components.AuthUtil;
 import com.project.futabuslines.components.JwtTokenUtil;
+import com.project.futabuslines.components.ValidationUtil;
 import com.project.futabuslines.dtos.UpdateWatchDTO;
 import com.project.futabuslines.dtos.WatchDTO;
 import com.project.futabuslines.dtos.WatchImageDTO;
 import com.project.futabuslines.enums.WatchStatus;
 import com.project.futabuslines.models.*;
+import com.project.futabuslines.responses.ApiResponse;
 import com.project.futabuslines.responses.WatchListUserViewResponse;
 import com.project.futabuslines.responses.WatchUserViewResponse;
 import com.project.futabuslines.services.IWatchService;
@@ -33,27 +36,45 @@ public class WatchController {
     private final IWatchService watchService;
     private final JwtTokenUtil jwtTokenUtil;
     private final FileStorageUtil fileStorageUtil;
+    private final AuthUtil authUtil;
+    private final ValidationUtil validationUtil;
 
     @PostMapping("create")
-    // Dang tai dong ho moi
     public ResponseEntity<?> createWatch(
             @Valid @RequestBody WatchDTO watchDTO,
-            BindingResult result
-    ){
-        if (result.hasErrors()){
-            List<String> errorMessage = result.getFieldErrors()
-                    .stream()
-                    .map(FieldError::getDefaultMessage)
-                    .toList();
-            return ResponseEntity.badRequest().body(errorMessage);
+            BindingResult result,
+            @RequestHeader(value = "Authorization", required = false) String token
+    ) {
+        if (validationUtil.hasErrors(result)) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.<List<String>>builder()
+                            .success(false)
+                            .message("Validation failed")
+                            .data(validationUtil.getErrorMessages(result))
+                            .build()
+            );
         }
         try {
-            Watch watch = watchService.createWatch(watchDTO);
-            return ResponseEntity.ok(watch);
-        }catch (Exception e){
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Long userId = authUtil.extractUserIdFromToken(token);
+            Watch watch = watchService.createWatch(watchDTO, userId);
+            return ResponseEntity.ok(
+                    ApiResponse.<Watch>builder()
+                            .success(true)
+                            .message("Watch created successfully")
+                            .data(watch)
+                            .build()
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.<Watch>builder()
+                            .success(false)
+                            .message("Error: " + e.getMessage())
+                            .data(null)
+                            .build()
+            );
         }
     }
+
     @GetMapping("get-all")
     // Lay toan bo danh sach
     public ResponseEntity<List<Watch>> getAllWatch(){
@@ -165,7 +186,7 @@ public class WatchController {
 
     }
 
-    @GetMapping("")
+    @GetMapping("get-watch")
     public ResponseEntity<?> getWatch(
             @RequestParam("page") int page,
             @RequestParam("limit") int limit,

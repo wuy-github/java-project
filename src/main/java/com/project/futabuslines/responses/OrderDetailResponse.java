@@ -17,8 +17,8 @@ public class OrderDetailResponse {
     @JsonProperty("order_id")
     private Long orderId;
 
-    @JsonProperty("product_id")
-    private Long productId;
+    @JsonProperty("watch_id")
+    private Long watchId;
 
     private Integer price;
 
@@ -28,14 +28,12 @@ public class OrderDetailResponse {
     @JsonProperty("total_money")
     private Integer totalMoney;
 
-    private String color;
-
     public static OrderDetailResponse fromOrderDetail(OrderDetail orderDetail){
         return OrderDetailResponse
                 .builder()
                 .id(orderDetail.getId())
                 .orderId(orderDetail.getOrder().getId())
-                .productId(orderDetail.getWatch().getId())
+                .watchId(orderDetail.getWatch().getId())
                 .price(orderDetail.getPrice())
                 .quantity(orderDetail.getQuantity())
                 .totalMoney(orderDetail.getTotalMoney())

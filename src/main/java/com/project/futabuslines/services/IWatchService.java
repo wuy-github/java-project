@@ -16,7 +16,7 @@ import java.util.List;
 
 @Service
 public interface IWatchService {
-    Watch createWatch(WatchDTO watchDTO) throws DataNotFoundException;
+    Watch createWatch(WatchDTO watchDTO, Long userId) throws DataNotFoundException;
     List<Watch> getAllWatch();
     Watch getWatchById(long id) throws DataNotFoundException;
     Watch updateWatch(long id, UpdateWatchDTO watchDTO) throws DataNotFoundException;

@@ -58,7 +58,7 @@ public class OTPService {
             return new UserSummaryDTO(true, user.getId(), user.getFullName());
         }
         if (contact.isEmpty()) {
-            throw new IllegalArgumentException("❌ Contact not found");
+            throw new IllegalArgumentException("Contact not found");
         }
         Optional<OTP> latestOtp = otpRepository.findTopByContactOrderByCreatedAtDesc(contact);
         if (latestOtp.isPresent() && latestOtp.get().getCreatedAt().plusSeconds(30).isAfter(LocalDateTime.now())) {
@@ -80,8 +80,8 @@ public class OTPService {
             // Email
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(contact);
-            message.setSubject("FUTABUSLINE OTP Verification");
-            message.setText("Mã OTP xác thực FUTA: " + code + "\nMã hết hạn sau 1 phút.");
+            message.setSubject("OTP Verification");
+            message.setText("Mã OTP xác thực: " + code + "\nMã hết hạn sau 1 phút.");
             mailSender.send(message);
             System.out.println("📩 Sent OTP to email: " + contact + " - Code: " + code);
         } else {
@@ -136,8 +136,8 @@ public class OTPService {
             // Email
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(contact);
-            message.setSubject("VIWAY OTP Verification");
-            message.setText("Mã OTP xác thực VIWAY: " + code + "\nMã hết hạn sau 1 phút.");
+            message.setSubject("OTP Verification");
+            message.setText("Mã OTP xác thực : " + code + "\nMã hết hạn sau 1 phút.");
             mailSender.send(message);
             System.out.println("📩 Sent OTP to email: " + contact + " - Code: " + code);
         } else {

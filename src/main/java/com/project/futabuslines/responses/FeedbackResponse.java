@@ -58,7 +58,7 @@ public class FeedbackResponse {
                 .description(feedback.getDescription())
                 .imageUrl(feedback.getImageUrl())
                 .createdAt(feedback.getCreatedAt())
-                .updatedAt(feedback.getUpdateAt())
+                .updatedAt(feedback.getUpdatedAt())
                 .build();
     }
 }

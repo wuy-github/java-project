@@ -8,6 +8,7 @@ import com.project.futabuslines.repositories.FavoriteRepository;
 import com.project.futabuslines.repositories.WatchDetailRepository;
 import com.project.futabuslines.repositories.WatchImageRepository;
 import com.project.futabuslines.repositories.WatchRepository;
+import com.project.futabuslines.responses.WatchDetailResponse;
 import com.project.futabuslines.responses.WatchDetailViewResponse;
 import com.project.futabuslines.responses.WatchDetailUserViewResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +25,10 @@ public class WatchDetailService implements IWatchDetailService{
     private final WatchDetailRepository watchDetailRepository;
     private final FavoriteRepository favoriteRepository;
     private final WatchImageRepository watchImageRepository;
+    private final EntityFinder entityFinder;
 
     @Override
-    public WatchDetail createWatchDetail(WatchDetailDTO watchDetailDTO) throws DataNotFoundException {
+    public WatchDetailResponse createWatchDetail(WatchDetailDTO watchDetailDTO) throws DataNotFoundException {
         Watch watch = watchRepository.findById(watchDetailDTO.getWatchId())
                 .orElseThrow(()-> new DataNotFoundException("Cannot found watch with id = " + watchDetailDTO.getWatchId()));
         WatchDetail newWatch = WatchDetail.builder()
@@ -44,7 +46,8 @@ public class WatchDetailService implements IWatchDetailService{
                 .dialColor(watchDetailDTO.getDialColor())
                 .origin(watchDetailDTO.getOrigin())
                 .build();
-        return watchDetailRepository.save(newWatch);
+        watchDetailRepository.save(newWatch);
+        return WatchDetailResponse.formWatchDetail(newWatch);
     }
 
     @Override
@@ -53,9 +56,10 @@ public class WatchDetailService implements IWatchDetailService{
     }
 
     @Override
-    public WatchDetail getWatchDetailByWatchId(long watchId) throws DataNotFoundException {
-        return watchDetailRepository.findByWatchId(watchId)
+    public WatchDetailResponse getWatchDetailByWatchId(long watchId) throws DataNotFoundException {
+        WatchDetail watchDetail = watchDetailRepository.findByWatchId(watchId)
                 .orElseThrow(()->new DataNotFoundException("Cannot found watch or not empty"));
+        return WatchDetailResponse.formWatchDetail(watchDetail);
     }
 
     @Override
@@ -87,14 +91,15 @@ public class WatchDetailService implements IWatchDetailService{
 
 
     @Override
-    public WatchDetail getWatchDetailById(long id) throws DataNotFoundException {
-        return watchDetailRepository.findById(id)
+    public WatchDetailResponse getWatchDetailById(long id) throws DataNotFoundException {
+        WatchDetail watchDetail = watchDetailRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Cannot found or empty"));
+        return WatchDetailResponse.formWatchDetail(watchDetail);
     }
 
     @Override
     public WatchDetail updateWatchDetail(long id, UpdateWatchDetailDTO watchDetailDTO) throws DataNotFoundException {
-        WatchDetail existingWatchDetail = getWatchDetailById(id);
+        WatchDetail existingWatchDetail = entityFinder.findWatchDetailById(id);
 
         existingWatchDetail.setGender(watchDetailDTO.getGender());
         existingWatchDetail.setShape(watchDetailDTO.getShape());
@@ -114,8 +119,7 @@ public class WatchDetailService implements IWatchDetailService{
 
     @Override
     public WatchDetail updatePartial(Long id, Map<String, Object> updates) throws DataNotFoundException {
-        WatchDetail existing = getWatchDetailById(id);
-
+        WatchDetail existing = entityFinder.findWatchDetailById(id);
         updates.forEach((key, value) -> {
             switch (key) {
                 case "gender" -> existing.setGender((String) value);
